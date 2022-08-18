@@ -2,6 +2,7 @@ import json
 
 
 def fill_data(file_name):
+    __doc__ = "Заполняет словари в зависимости от имени файла"
     d = {}
     if file_name == 'tokens':
         d = {'main': '5113148614:AAEUyd_NXuXNiluE4DR1sWBzFxrq0ag62XU',
