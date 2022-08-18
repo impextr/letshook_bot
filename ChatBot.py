@@ -54,11 +54,11 @@ class ChatBot:
         """
         context = self.context
 
-        if photo != None:
+        if photo is not None:
             if os.path.isfile(photo):
                 message_id = context.bot.send_photo(self.chat_id, photo=open(photo, 'rb'), timeout=30).message_id
                 self.add_message(message_id)
-        if text != None:
+        if text is not None:
             if markup:
                 self.create_menu_markup_buttons()
                 message_id = context.bot.send_message(self.chat_id, text=text, reply_markup=self.markup).message_id
@@ -96,7 +96,7 @@ class ChatBot:
             время = buttons_text[i][0]
             buttons_row.append(InlineKeyboardButton(text=buttons_text[i][1], callback_data=f'Button_time{время}'))
         buttons.append(buttons_row)
-        if начальное_время>конечное_время:
+        if начальное_время > конечное_время:
             return False
         self.markup = InlineKeyboardMarkup(buttons).to_json()
         return True
@@ -407,7 +407,7 @@ options = load_json('options.json')
 
 test_mode = platform.node() == 'Acer'
 
-my_token_test = '5264995165:AAFp6Zo3mYdiXT3kBA1eO5sc55vCWQokMrc'
+my_token_test = ''
 my_token_main = options['Токен API Telegram']
 
 if test_mode:
@@ -583,9 +583,6 @@ def get_contact(update, context):
         text = 'Дякую що не мовчиш, завдяки тобі ми спробуємо стати сильніше 💪'
         b.send(text=text)
         b.сообщить_о_событии()
-        b.mode == 0
-        b.complain = False
-
 
 def get_location(update, context):
     b = context.user_data['bot']
