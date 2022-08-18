@@ -22,7 +22,7 @@ class ChatBot:
         self.context = context
 
         self.options = load_json('options.json')
-        self.net = load_json('заведения.json')
+        self.hookahs = load_json('заведения.json')
 
         self.side = ''
         self.white = '0'
@@ -69,8 +69,8 @@ class ChatBot:
 
     def create_time_buttons_markup(self):
         начальное_время = 0
-        открывается = self.net[self.white]['Открывается']
-        закрывается = self.net[self.white]['Закрывается']
+        открывается = self.hookahs[self.white]['Открывается']
+        закрывается = self.hookahs[self.white]['Закрывается']
         if self.when == 'Today':
             if self.complain:
                 начальное_время = открывается
@@ -110,10 +110,8 @@ class ChatBot:
         if not self.messages:  # нечего удалять
             return
         for i in self.messages:
-            try:
-                self.context.bot.delete_message(self.chat_id, message_id=i)
-            except:
-                print(f'Сообщение не найдено: {i}')
+            if not self.context.bot.delete_message(self.chat_id, message_id=i):
+                print(f'Сообщение не удалось удалить: {i}')
         self.messages = []
 
     def add_message(self, message_id):
@@ -121,15 +119,15 @@ class ChatBot:
 
     def create_menu_markup_buttons(self):
         if self.menu_level == 1:
-            d = self.net
-            l = []
-            for i,v in d.items():
+            d = self.hookahs
+            hookah_list = []
+            for i, v in d.items():
                 if v['Берег Киева'] == self.side:
                     s = v['Название']
-                    l.append([InlineKeyboardButton(text=s, callback_data='Mr.White ' + i)])
+                    hookah_list.append([InlineKeyboardButton(text=s, callback_data='Mr.White ' + i)])
             b = InlineKeyboardButton(text='🔙Назад', callback_data='Всі заклади')
-            l.append([b])
-            self.markup = InlineKeyboardMarkup(l)
+            hookah_list.append([b])
+            self.markup = InlineKeyboardMarkup(hookah_list)
         elif self.menu_level == 0:
             l1 = []
             button1 = InlineKeyboardButton(text='📍 Лівий берег', callback_data='Лівий берег')
@@ -137,11 +135,11 @@ class ChatBot:
             l1.append([button1, button2])
             if self.chat_id in self.admins:
                 button3 = InlineKeyboardButton(text='Получить файлы настроек', callback_data='Get file')
-                button4 = InlineKeyboardButton(text='Подписчики', callback_data='Get followers' )
+                button4 = InlineKeyboardButton(text='Подписчики', callback_data='Get followers')
                 l1.append([button3, button4])
             self.markup = InlineKeyboardMarkup(l1)
         elif self.menu_level == 2:
-            d = self.net[self.white]
+            d = self.hookahs[self.white]
             s = self.white
 
             button1 = InlineKeyboardButton(text='🍽️ Меню', url=d['Меню ссылка'])
@@ -160,41 +158,41 @@ class ChatBot:
                 button11 = InlineKeyboardButton(text='🔙Назад', callback_data='Лівий берег')
 
             self.markup = InlineKeyboardMarkup([[button1, button2],
-                                                 [button3, button4],
-                                                 [button5, button6],
-                                                 [button7, button8],
-                                                 [button9, button10],
-                                                 [button11]])
+                                                [button3, button4],
+                                                [button5, button6],
+                                                [button7, button8],
+                                                [button9, button10],
+                                                [button11]])
         elif self.menu_level == 3:
-            if self.mode == 1: # имя пользователя
+            if self.mode == 1:  # имя пользователя
                 button1 = InlineKeyboardButton(text="Так, це я",
-                                                     callback_data='Так, це я')
+                                               callback_data='Так, це я')
                 button2 = InlineKeyboardButton(text='Ні, зараз напишу',
-                                                     callback_data='Ні, зараз напишу')
+                                               callback_data='Ні, зараз напишу')
                 self.markup = InlineKeyboardMarkup([[button1, button2]])
-            elif self.mode == 2: # дата
+            elif self.mode == 2:  # дата
                 self.сформировать_кнопки_дат()
-            elif self.mode == 3: #  время
+            elif self.mode == 3:  # время
                 self.create_time_buttons_markup()
             elif self.mode == 4:
                 pass
-            elif self.mode == 5: #  запрос поделиться телефоном
+            elif self.mode == 5:  # запрос поделиться телефоном
                 button1 = KeyboardButton(text="Поділитись телефоном", request_contact=True)
                 buttons = [button1]
                 if self.complain:
                     button2 = KeyboardButton(text="Залишитись анонімом")
                     buttons.append(button2)
-                self.markup = ReplyKeyboardMarkup(resize_keyboard = True,
+                self.markup = ReplyKeyboardMarkup(resize_keyboard=True,
                                                   keyboard=[buttons],
                                                   selective=False,
                                                   one_time_keyboard=True,
                                                   input_field_placeholder='')
 
-            elif self.mode == 6: # подтверждение брони
+            elif self.mode == 6:  # подтверждение брони
                 button1 = InlineKeyboardButton(text="Так",
-                                                     callback_data='Подтверждение брони окончательное')
+                                               callback_data='Подтверждение брони окончательное')
                 button2 = InlineKeyboardButton(text="Відмова",
-                                                     callback_data='Отказ от брони')
+                                               callback_data='Отказ от брони')
                 self.markup = InlineKeyboardMarkup([[button1], [button2]])
             else:
                 button1 = InlineKeyboardButton(text='🔙Назад', callback_data='White ' + self.white)
@@ -208,7 +206,7 @@ class ChatBot:
         self.menu_level = 3
         for i in range(1, 7):
             catalog = 'White' + self.white
-            file_name = catalog + f'\White{i}.jpeg'
+            file_name = catalog + fr'\White{i}.jpeg'
             if os.path.isfile(file_name):
                 self.send(photo=file_name)
         text = 'Ось декілька фоток, більше можеш знайти на сайті www.letshook.com.ua'
@@ -217,7 +215,6 @@ class ChatBot:
     def сообщить_о_событии(self):
         white = self.white
         дата_и_время = dt.datetime.strftime(self.datetime, '%H:%M, %A %d %B')
-        event = ''
         if self.booking:
             event = 'Резерв'
         else:
@@ -265,26 +262,28 @@ class ChatBot:
 
         today = dt.datetime.today()
         event = 'Booking' if self.booking else 'Сomplaint'
-        d = [(today + dt.timedelta(days=i)).strftime(f_str) for i in range(-1,2)]
+        d = [(today + dt.timedelta(days=i)).strftime(f_str) for i in range(-1, 2)]
 
-        days =[('Today', 'Сьгодні:', d[1]),
-               ('Yesterday', 'Вчора:', d[0]) if event == 'Сomplaint' else ('Tommorow', 'Завтра', d[0]),
-               ('OtherDate', 'Інша дата', '')]
+        days = [('Today', 'Сьгодні:', d[1]),
+                ('Yesterday', 'Вчора:', d[0]) if event == 'Сomplaint' else ('Tommorow', 'Завтра', d[0]),
+                ('OtherDate', 'Інша дата', '')]
 
-        l = []
+        buttons_list = []
         for when in days:
             button = InlineKeyboardButton(text=f"{when[1]} {when[2]}", callback_data=event + when[0])
-            l.append([button])
-        self.markup = InlineKeyboardMarkup(l)
+            buttons_list.append([button])
+        self.markup = InlineKeyboardMarkup(buttons_list)
 
     def set_date(self, get_text):
-        format_str = '%d.%m.%y'
-        try:
-            v = dt.datetime.strptime(get_text, format_str)
-        except:
-            v = dt.datetime.today()
-        self.datetime = v
-        self.get_time()
+        format_strings = ['%d.%m.%y', '%d.%m.%Y', '%d/%m/%y', '%d/%m/%Y', '%d-%m-%y', '%d-%m-%Y']
+        for f in format_strings:
+            try:
+                self.datetime = dt.datetime.strptime(get_text, f)
+                break
+            except ValueError:
+                continue
+        else:
+            self.datetime = dt.datetime.today()
 
     def get_time(self):
         self.mode = 3
@@ -318,12 +317,12 @@ class UsersList:
         __file_exit = os.path.isfile(self.file_name)
         if not __file_exit:
             self.create_file()  # 02. создаёт пустой файл заданного типа
-        self.read_users_list() #  03. Прочитать список пользователей из файла
+        self.read_users_list()  # 03. Прочитать список пользователей из файла
         if not self.current_user_in_list():  # # 04. Пользователь есть в списке?
             self.add_user()                 # 05. Добавить пользователя в список
             self.write_file(mode='a')     # 06. Записать список пользователей в файл
 
-    def write_file(self,mode='w'):
+    def write_file(self, mode='w'):
         if self.file_type == 'json':
             with open(self.file_name, 'w', encoding='utf-8') as __file:
                 json.dump(self.users_list, __file, indent=2)
@@ -331,23 +330,21 @@ class UsersList:
             with open('users.csv', mode, encoding="utf-8") as __file:
                 __writer = csv.writer(__file, delimiter=';')
                 for i in self.users_list:
-                    __writer.writerow(
-                    [i['chat_id'],
-                    i['full_name'],
-                    i['created'],
-                    i['last'],
-                     i['language_code']]
-                    )
+                    __writer.writerow([i['chat_id'],
+                                       i['full_name'],
+                                       i['created'],
+                                       i['last'],
+                                       i['language_code']])
 
     def get_current_user(self):
         datetime_now_str = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         return {'chat_id': str(self.message.chat.id),
-                     'full_name': self.message.from_user.full_name,
-                     'created': datetime_now_str,
-                     'last': datetime_now_str,
-                     'language_code':self.language_code}
+                'full_name': self.message.from_user.full_name,
+                'created': datetime_now_str,
+                'last': datetime_now_str,
+                'language_code': self.language_code}
 
-    def create_file(self): #  создаёт и записывает пустой файл
+    def create_file(self):  # создаёт и записывает пустой файл
         if self.file_type == 'json':
             __users_list = []
             with open(self.file_name, 'w') as __file:
@@ -362,23 +359,27 @@ class UsersList:
             with open(self.file_name, 'r', encoding="utf-8") as file:
                 self.users_list = json.load(file)
         elif self.file_type == 'csv':
-            self.read_userslist_from_csv(message=self.message)
+            self.read_userslist_from_csv()
 
-    def current_user_in_list(self): #  04. Польз. есть в списке?
+    def current_user_in_list(self):  # 04. Пользователь есть в списке?
         for i in self.users_list:
             if i['chat_id'] == str(self.message.chat.id):
                 return True
         return False
 
-    def  add_user(self):
+    def add_user(self):
         self.users_list.append(self.get_current_user())
 
-    def read_userslist_from_csv(self, message):
+    def read_userslist_from_csv(self):
         with open(self.file_name, 'r', encoding="utf-8") as file:
             __reader = csv.reader(file, delimiter=';')
             for row in __reader:
                 if len(row) > 0:
-                    self.users_list.append({'chat_id':row[0], 'full_name':row[1], 'created':row[2], 'last':row[3], 'language_code':row[4]})
+                    self.users_list.append({'chat_id': row[0],
+                                            'full_name': row[1],
+                                            'created': row[2],
+                                            'last': row[3],
+                                            'language_code': row[4]})
 
     def get_current__user(self):
         for i in self.users_list:
@@ -392,7 +393,7 @@ class UsersList:
         delta = dt.datetime.now() - dt.datetime.strptime(self.user['last'], "%Y-%m-%d %H:%M:%S")
         self.user['last'] = dt.datetime.strftime(dt.datetime.now(), "%Y-%m-%d %H:%M:%S")
         return delta
-#endregion
+# endregion
 
 
 # region initialization
@@ -403,24 +404,19 @@ def load_json(filename):
         d['Список администраторов'] = [int(i) for i in d['Список администраторов']]
     return d
 
+
 options = load_json('options.json')
+tokens = load_json('tokens.json')
 
 test_mode = platform.node() == 'Acer'
-
-my_token_test = ''
-my_token_main = options['Токен API Telegram']
-
-if test_mode:
-    my_token = my_token_test
-else:
-    my_token = my_token_main
+my_token = tokens['test'] if test_mode else tokens['main']
 #  endregion
 
 
 # region Handlers
 def inlineKeyboard_handler(update, context):
     b = context.user_data['bot']
-    b.delete_messages() # ??? проверить нужно ли вообще вызывать
+    b.delete_messages()
 
     button_data = update.callback_query.data
     if button_data == 'Всі заклади':
@@ -437,37 +433,37 @@ def inlineKeyboard_handler(update, context):
     elif button_data[:8] == 'Mr.White':
         b.menu_level = 2
         b.white = button_data[9:]
-        d = b.net[b.white]
-        b.send(text=d['Приветствие'], photo=f'White{b.white}\mw1.jpg', markup=True)
+        d = b.hookahs[b.white]
+        b.send(text=d['Приветствие'], photo=fr'White{b.white}\mw1.jpg', markup=True)
     elif button_data[:13] == 'Фотки закладу':
         b.white = button_data[13:]
         b.show_photos()
     elif button_data == 'Зателефонувати':
         b.menu_level = 3
-        d = b.net[b.white]
+        d = b.hookahs[b.white]
         b.send(text='Щоб зателефонувати, натисни на номер.')
         tel = d['Телефон']
         b.send(text=tel, markup=True)
     elif button_data == 'Get file':
         if os.path.isfile('options.json'):
-            message_id = context.bot.send_document(b.chat_id, open(r'options.json', 'rb'), timeout=30).message_id
+            context.bot.send_document(b.chat_id, open(r'options.json', 'rb'), timeout=30)
         else:
             b.send(text='Не обнаружен файл настроек "options.json"')
         if os.path.isfile('заведения.json'):
-            message_id = context.bot.send_document(b.chat_id, open(r'заведения.json', 'rb'), timeout=30).message_id
+            context.bot.send_document(b.chat_id, open(r'заведения.json', 'rb'), timeout=30)
         else:
             b.send(text='Не обнаружен файл с параметрами заведений "заведения.json"')
     elif button_data == 'Get followers':
         users_list = context.user_data['users'].users_list
         s = ''
-        for i,v in enumerate(users_list):
-            s += f"{i+1}) {v['chat_id']}: {v['full_name']}, lang: {v['language_code']}\n"
+        for i, user in enumerate(users_list):
+            s += f"{i+1}) {user['chat_id']}: {user['full_name']}, lang: {user['language_code']}\n"
         b.send(text=s)
     elif button_data == 'Забукати столик':
         b.menu_level = 3
         b.booking = True
         b.mode = 1
-        photo = 'White' + b.white + '\mw1.jpg'
+        photo = 'White' + b.white + r'\mw1.jpg'
         text = f'Столик на твоє імʼя {update.effective_chat.full_name}, або ввести інше?'
         b.send(text=text, photo=photo, markup=True)
     elif button_data == 'Так, це я' or button_data == 'Ні, зараз напишу':
@@ -539,17 +535,18 @@ def get_answer_from_user(update, context):
         b.send(text=text, markup=True)
     elif b.mode == 2:
         b.set_date(get_text)
-    elif b.mode == 4 and b.booking: #  кол-во гостей
+        b.get_time()
+    elif b.mode == 4 and b.booking:  # кол-во гостей
         n = 0
         if get_text.isdecimal():
             try:
                 n = int(get_text)
-            except:
+            except ValueError or TypeError:
                 b.send(text='Невірне значення. Введіте число.')
         b.qnty = n
 
         b.mode = 5
-        b.send(text='Залиш свій мобільний, щоб ми могли підтвердити бронювання', markup= True)
+        b.send(text='Залиш свій мобільний, щоб ми могли підтвердити бронювання', markup=True)
     elif b.mode == 4 and b.complain:
         b.complain_text = get_text
         b.mode = 5
@@ -559,6 +556,7 @@ def get_answer_from_user(update, context):
             text = 'Дякую що не мовчиш, завдяки тобі ми спробуємо стати сильніше 💪'
             b.send(text=text, markup=True)
             b.сообщить_о_событии()
+
 
 def start_callback(update, context):
     users = UsersList(file_type='json', message=update.message)
@@ -574,9 +572,8 @@ def start_callback(update, context):
 def get_contact(update, context):
     b = context.user_data['bot']
     b.phone_number = update.message.contact.phone_number
-    b.delete_messages()  # ??? проверить нужно ли вообще вызывать
+    b.delete_messages()
 
-    text = ''
     if b.booking:
         b.подтверждение_брони()
     elif b.complain:
@@ -584,30 +581,26 @@ def get_contact(update, context):
         b.send(text=text)
         b.сообщить_о_событии()
 
+
 def get_location(update, context):
     b = context.user_data['bot']
     context.user_data['Location'] = update.message.location
     b.send(text=f'Дякуємо, локація зафіксована як: {str(update.message.location)}')
 
+
 def get_file(update, context):
-
     b = context.user_data['bot']
-
     if b.chat_id not in b.options['Список администраторов']:
         b.send(text='У вас нет прав для отправки файлов.')
         return
-
     file_name = update.message.document.file_name
-
     if file_name != 'options.json' and file_name != 'заведения.json':
         b.send(text='Не верное имя файла.')
         return
     try:
         file = context.bot.get_file(update.message.document.file_id)
-        file_info = file.download()
-        # downloaded_file = context.bot.download_file(file_info.file_path)
 
-        with open("options.json", 'wb') as f:
+        with open(file_name, 'wb') as f:
             context.bot.get_file(update.message.document).download(out=f)
 
     except Exception as e:
