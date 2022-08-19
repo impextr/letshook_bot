@@ -68,11 +68,21 @@ class ChatBot:
             pass
 
     def create_time_buttons_markup(self):
-        start_time = 0
+        self.__doc__ = """Создаёт inline-кнопки на каждый час
+        1) кнопки выводятся в несколько колонок, значение задается в переменной buttons_in_row
+        2) начальное и конечное время определяются по времени начала и окончания работы заведения, берутся из настроек
+        3) если дата = сегодня:
+            а) для резерва начальное время = текущий час + 1, конечно - за час до окончания работы заведения
+            б) для жалобы начальное время = время начала работы заведения, конечное - текущий час минус 1 
+        """
+        bottons_in_row = 5
+
         open_time = self.hookahs[self.white]['Открывается']
         close_time = self.hookahs[self.white]['Закрывается']
+
         start_time = 0
         stop_time = close_time
+
         if self.when == 'Today':
             if self.complain:
                 start_time = open_time
@@ -100,7 +110,7 @@ class ChatBot:
             buttons_text.append((i, f'{i}:00'))
 
         for i in range(len(buttons_text)):
-            if i % 3 == 0 and i > 0:
+            if i % bottons_in_row == 0 and i > 0:
                 buttons.append(buttons_row)
                 buttons_row = []
             время = buttons_text[i][0]
@@ -276,7 +286,7 @@ class ChatBot:
         d = [(today + dt.timedelta(days=i)).strftime(f_str) for i in range(-1, 2)]
 
         days = [('Today', 'Сьгодні:', d[1]),
-                ('Yesterday', 'Вчора:', d[0]) if event == 'Сomplaint' else ('Tommorow', 'Завтра', d[0]),
+                ('Yesterday', 'Вчора:', d[0]) if event == 'Сomplaint' else ('Tommorow', 'Завтра', d[2]),
                 ('OtherDate', 'Інша дата', '')]
 
         buttons_list = []
@@ -318,10 +328,10 @@ class UsersList:
     """
 
     def __init__(self, file_type, message):
-        """ Читает данные из файла self.filename и возвращает None если не удалось прочитать"""
         self.file_type = file_type
         self.file_name = r'Data\Users.' + self.file_type
         self.message = message
+        self.phone = ''
         self.language_code = message.from_user.language_code
         self.users_list = []
         self.get_users_list()
@@ -338,8 +348,8 @@ class UsersList:
 
     def write_file(self, mode='w'):
         if self.file_type == 'json':
-            with open(self.file_name, 'w', encoding='utf-8') as __file:
-                json.dump(self.users_list, __file, indent=2)
+            with open(self.file_name, 'wt', encoding='utf-8') as __file:
+                json.dump(self.users_list, __file, indent=2, ensure_ascii=False)
         elif self.file_type == 'csv':
             with open(r'Data\users.csv', mode, encoding="utf-8") as __file:
                 __writer = csv.writer(__file, delimiter=';')
@@ -354,11 +364,13 @@ class UsersList:
         datetime_now_str = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         return {'chat_id': str(self.message.chat.id),
                 'full_name': self.message.from_user.full_name,
+                'phone': self.phone,
                 'created': datetime_now_str,
                 'last': datetime_now_str,
                 'language_code': self.language_code}
 
-    def create_file(self):  # создаёт и записывает пустой файл
+    def create_file(self):
+        self.__doc__ = 'Создаёт и записывает пустой файл'
         if self.file_type == 'json':
             __users_list = []
             with open(self.file_name, 'w') as __file:
@@ -372,6 +384,9 @@ class UsersList:
         if self.file_type == 'json':
             with open(self.file_name, 'r', encoding="utf-8") as file:
                 self.users_list = json.load(file)
+                if self.users_list[0].get('phone') == None:
+                    for i in self.users_list:
+                        i['phone'] = ''
         elif self.file_type == 'csv':
             self.read_userslist_from_csv()
 
@@ -407,6 +422,12 @@ class UsersList:
         delta = dt.datetime.now() - dt.datetime.strptime(self.user['last'], "%Y-%m-%d %H:%M:%S")
         self.user['last'] = dt.datetime.strftime(dt.datetime.now(), "%Y-%m-%d %H:%M:%S")
         return delta
+
+    def update_phone(self, phone):
+        self.user['phone'] = phone
+        self.write_file()
+
+
 # endregion
 
 
@@ -591,6 +612,8 @@ def start_callback(update, context):
 def get_contact(update, context):
     b = context.user_data['bot']
     b.phone_number = update.message.contact.phone_number
+    users = context.user_data['users']
+    users.update_phone(b.phone_number)
     b.delete_messages()
 
     if b.booking:
@@ -598,7 +621,7 @@ def get_contact(update, context):
     elif b.complain:
         text = 'Дякую що не мовчиш, завдяки тобі ми спробуємо стати сильніше 💪'
         b.send(text=text)
-        b.сообщить_о_событии()
+        b.notify_about_event()
 
 
 def get_location(update, context):
