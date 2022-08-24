@@ -501,7 +501,10 @@ def inlineKeyboard(update, context):
         users_list = context.user_data['users'].users_list
         s = ''
         for i, user in enumerate(users_list):
-            s += f"{i+1}) {user['chat_id']}: {user['full_name']}, lang: {user['language_code']}\n"
+            phone = user['phone']
+            if phone:
+                phone = f" {user['phone']}, "
+            s += f"{i+1}) {user['full_name']}, {phone} язык: {user['language_code']}\n"
         b.send(text=s)
     elif button_data == 'Забукати столик':
         b.menu_level = 3
