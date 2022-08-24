@@ -6,7 +6,7 @@ import os
 import platform
 
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
+from telegram import *
 from telegram.ext import *
 
 
@@ -75,7 +75,7 @@ class ChatBot:
             а) для резерва начальное время = текущий час + 1, конечно - за час до окончания работы заведения
             б) для жалобы начальное время = время начала работы заведения, конечное - текущий час минус 1 
         """
-        bottons_in_row = 5
+        bottons_in_row = 3
 
         open_time = self.hookahs[self.white]['Открывается']
         close_time = self.hookahs[self.white]['Закрывается']
@@ -123,15 +123,22 @@ class ChatBot:
 
     def greating(self):
         self.send(photo=self.options['Имя файла общей заставки'])
-        self.send(text=self.options['Общее приветствие 1'])
+        try:
+            user_name = self.update.effective_user.full_name
+        except ValueError or KeyError:
+            user_name = ''
+        self.send(text=self.options['Общее приветствие 1'].format(user_name=user_name))
         self.send(text=self.options['Общее приветствие 2'], markup=True)
 
     def delete_messages(self):
         if not self.messages:  # нечего удалять
             return
         for i in self.messages:
-            self.context.bot.delete_message(self.chat_id, message_id=i)
-            # if not self.context.bot.delete_message(self.chat_id, message_id=i):
+            try:
+                self.context.bot.delete_message(self.chat_id, message_id=i)
+            except TelegramError:
+                pass
+                # if not self.context.bot.delete_message(self.chat_id, message_id=i):
             #     print(f'Сообщение не удалось удалить: {i}')
         self.messages = []
 
@@ -470,7 +477,10 @@ def inlineKeyboard(update, context):
         b.menu_level = 2
         b.white = button_data[6:]
         d = b.hookahs[b.white]
-        b.send(text=d['Приветствие'], photo=fr'White{b.white}\mw1.jpg', markup=True)
+        text = d['Приветствие'] + f"\n\nЧас роботи: з {d['Открывается']} до {d['Закрывается']} \n\n"
+        b.send(text=text)
+        text = 'Що саме тебе цікавить?'
+        b.send(text=text, photo=fr'White{b.white}\mw1.jpg', markup=True)
     elif button_data[:13] == 'Фотки закладу':
         b.white = button_data[13:]
         b.show_photos()
@@ -598,6 +608,7 @@ def get_answer_from_user(update, context):
             b.send(text=text, markup=True)
             b.notify_about_event()
 
+
 def start_callback(update, context):
     users = UsersList(file_type='json', message=update.message)
     users.write_file()
@@ -611,7 +622,10 @@ def start_callback(update, context):
 
 def get_contact(update, context):
     b = context.user_data['bot']
-    b.phone_number = update.message.contact.phone_number
+    num = update.message.contact.phone_number
+    if num[0] != '+':
+        mum += '+'
+    b.phone_number = num
     users = context.user_data['users']
     users.update_phone(b.phone_number)
     b.delete_messages()
