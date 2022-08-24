@@ -317,7 +317,7 @@ class ChatBot:
         self.mode = 3
 
         if self.complain:
-            text = text = 'В який приблизно час?'
+            text = 'В який приблизно час?'
         else:
             if not self.create_time_buttons_markup():
                 text = 'На жаль на сьогодні часу для резерву вже немає'
@@ -391,7 +391,7 @@ class UsersList:
         if self.file_type == 'json':
             with open(self.file_name, 'r', encoding="utf-8") as file:
                 self.users_list = json.load(file)
-                if self.users_list[0].get('phone') == None:
+                if self.users_list[0].get('phone') is None:
                     for i in self.users_list:
                         i['phone'] = ''
         elif self.file_type == 'csv':
@@ -624,7 +624,7 @@ def get_contact(update, context):
     b = context.user_data['bot']
     num = update.message.contact.phone_number
     if num[0] != '+':
-        mum += '+'
+        num += '+'
     b.phone_number = num
     users = context.user_data['users']
     users.update_phone(b.phone_number)
