@@ -627,7 +627,7 @@ def get_contact(update, context):
     b = context.user_data['bot']
     num = update.message.contact.phone_number
     if num[0] != '+':
-        num += '+'
+        num = '+' + num
     b.phone_number = num
     users = context.user_data['users']
     users.update_phone(b.phone_number)
