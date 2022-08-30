@@ -293,7 +293,7 @@ class ChatBot:
         d = [(today + dt.timedelta(days=i)).strftime(f_str) for i in range(-1, 2)]
 
         days = [('Today', 'Сьгодні:', d[1]),
-                ('Yesterday', 'Вчора:', d[0]) if event == 'Сomplaint' else ('Tommorow', 'Завтра', d[2]),
+                ('Yesterday', 'Вчора:', d[0]) if event == 'Сomplaint' else ('Tomorrow', 'Завтра', d[2]),
                 ('OtherDate', 'Інша дата', '')]
 
         buttons_list = []
