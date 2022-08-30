@@ -458,7 +458,11 @@ my_token = tokens['test'] if test_mode else tokens['main']
 
 # region Handlers
 def inlineKeyboard(update, context):
-    b = context.user_data['bot']
+    try:
+        b = context.user_data['bot']
+    except KeyError:
+        b = ChatBot(update, context)
+        context.user_data['bot'] = b
     b.delete_messages()
 
     button_data = update.callback_query.data
@@ -578,7 +582,12 @@ def inlineKeyboard(update, context):
 
 def get_answer_from_user(update, context):
     get_text = update.message.text
-    b = context.user_data['bot']
+    try:
+        b = context.user_data['bot']
+    except KeyError:
+        b = ChatBot(update, context)
+        context.user_data['bot'] = b
+
     if b.mode == 1:
         b.user_name = get_text
         b.menu_level = 3
