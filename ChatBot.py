@@ -326,6 +326,13 @@ class ChatBot:
 
         self.send(text=text, markup=True)
 
+    def get_hookah_attr(self, attr_name):
+        if self.white == '0':
+            self.menu_level = 0
+            self.greating()
+            return
+        return self.hookahs[self.white][attr_name]
+
 
 class UsersList:
     """
@@ -491,7 +498,7 @@ def inlineKeyboard(update, context):
     elif button_data == 'Зателефонувати':
         b.menu_level = 3
         b.send(text='Щоб зателефонувати, натисни на номер.')
-        b.send(text=b.hookahs[b.white]['Телефон'], markup=True)
+        b.send(text=b.get_hookah_attr('Телефон'), markup=True)
     elif button_data == 'Get file':
         if os.path.isfile(r'Data\options.json'):
             context.bot.send_document(b.chat_id, open(r'Data\options.json', 'rb'), timeout=30)
@@ -572,10 +579,10 @@ def inlineKeyboard(update, context):
         b.send(text=text, markup=True)
     elif button_data == 'Акції':
         b.menu_level = 3
-        b.send(text=b.hookahs[b.white]['Акции'], markup=True)
+        b.send(text=b.get_hookah_attr('Акции'), markup=True)
     elif button_data == 'wi-fi':
         b.menu_level = 3
-        b.send(text=b.hookahs[b.white]['Пароль'], markup=True)
+        b.send(text=b.get_hookah_attr('Пароль'), markup=True)
     elif button_data == 'Подтверждение брони окончательное':
         b.booking_approval(finaly=True)
 
