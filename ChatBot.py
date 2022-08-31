@@ -633,7 +633,11 @@ def start_callback(update, context):
 
 
 def get_contact(update, context):
-    b = context.user_data['bot']
+    try:
+        b = context.user_data['bot']
+    except KeyError:
+        b = ChatBot(update, context)
+        context.user_data['bot'] = b
     num = update.message.contact.phone_number
     if num[0] != '+':
         num = '+' + num
