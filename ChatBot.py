@@ -38,6 +38,10 @@ class ChatBot:
 
         self.complain = False
         self.complain_text = ''
+
+        self.spam = False
+        self.spam_text = ''
+
         self.menu_level = 0
         self.messages = []
         self.booking_receivers = self.options['Список получателей сообщения о резерве']
@@ -146,7 +150,18 @@ class ChatBot:
         self.messages.append(message_id)
 
     def create_menu_markup_buttons(self):
-        if self.menu_level == 1:
+        if self.menu_level == 0:
+            l1 = []
+            button1 = InlineKeyboardButton(text='📍 Лівий берег', callback_data='Лівий берег')
+            button2 = InlineKeyboardButton(text='📍 Правий берег', callback_data='Правий берег')
+            l1.append([button1, button2])
+            if self.chat_id in self.admins:
+                button3 = InlineKeyboardButton(text='Получить файлы настроек', callback_data='Get file')
+                button4 = InlineKeyboardButton(text='Подписчики', callback_data='Get followers')
+                button5 = InlineKeyboardButton(text='Рассылка', callback_data='Spam')
+                l1.append([button3, button4, button5])
+            self.markup = InlineKeyboardMarkup(l1)
+        elif self.menu_level == 1:
             d = self.hookahs
             hookah_list = []
             for i, v in d.items():
@@ -156,16 +171,6 @@ class ChatBot:
             b = InlineKeyboardButton(text='🔙Назад', callback_data='Всі заклади')
             hookah_list.append([b])
             self.markup = InlineKeyboardMarkup(hookah_list)
-        elif self.menu_level == 0:
-            l1 = []
-            button1 = InlineKeyboardButton(text='📍 Лівий берег', callback_data='Лівий берег')
-            button2 = InlineKeyboardButton(text='📍 Правий берег', callback_data='Правий берег')
-            l1.append([button1, button2])
-            if self.chat_id in self.admins:
-                button3 = InlineKeyboardButton(text='Получить файлы настроек', callback_data='Get file')
-                button4 = InlineKeyboardButton(text='Подписчики', callback_data='Get followers')
-                l1.append([button3, button4])
-            self.markup = InlineKeyboardMarkup(l1)
         elif self.menu_level == 2:
             d = self.hookahs[self.white]
             s = self.white
@@ -441,7 +446,6 @@ class UsersList:
         self.user['phone'] = phone
         self.write_file()
 
-
 # endregion
 
 
@@ -585,6 +589,18 @@ def inlineKeyboard(update, context):
         b.send(text=b.get_hookah_attr('Пароль'), markup=True)
     elif button_data == 'Подтверждение брони окончательное':
         b.booking_approval(finaly=True)
+    elif button_data == 'Spam':
+        b.send(text='Hello, admin!\nОтправь текст рассылки')
+        b.spam = True
+    elif button_data == 'Spam_yes':
+        users = b.context.user_data['users'].users_list
+        for u in users:
+            context.bot.send_message(u['chat_id'], text=b.spam_text, timeout=30)
+            b.send(f"Отправка: {u['full_name']}")
+    if button_data[:5] == 'Spam_':
+        b.spam = False
+        b.spam_text = ''
+        b.greating()
 
 
 def get_answer_from_user(update, context):
@@ -594,6 +610,14 @@ def get_answer_from_user(update, context):
     except KeyError:
         b = ChatBot(update, context)
         context.user_data['bot'] = b
+
+    if b.spam:
+        b.spam_text = get_text
+
+        button1 = InlineKeyboardButton(text='Отправить', callback_data='Spam_yes')
+        button2 = InlineKeyboardButton(text='Отмена', callback_data='Spam_no')
+        markup = InlineKeyboardMarkup([[button1, button2]])
+        context.bot.send_message(b.chat_id, text='Контроль текста рассылки:\n\n' + get_text, reply_markup=markup)
 
     if b.mode == 1:
         b.user_name = get_text
