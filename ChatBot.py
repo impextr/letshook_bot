@@ -616,11 +616,19 @@ def inlineKeyboard(update, context):
             b.send("Ошибка получения списка рассылки")
             return
         b.menu_level = 3
-        button1 = InlineKeyboardButton(text='⏰ Столик', callback_data='Забукати столик1')
+        booking_hookah_number = '2'
+        button1 = InlineKeyboardButton(text='⏰ Столик', callback_data='Забукати столик' + booking_hookah_number)
         button2 = InlineKeyboardButton(text='Головне меню', callback_data='Всі заклади')
         markup = InlineKeyboardMarkup([[button1, button2]])
+        file_name = 'under_construction1.png'
+        photo = r'Data' '\\' + file_name
+        if not os.path.isfile(photo):
+            b.send(text=f'Файл фото не обнаружен: {photo}')
+            return
         for u in users:
             if str(b.chat_id) != u['chat_id']:
+                message_id = context.bot.send_photo(u['chat_id'], photo=open(photo, 'rb'), timeout=30).message_id
+                b.add_message(message_id)
                 message_id = context.bot.send_message(u['chat_id'], text=b.spam_text, reply_markup=markup).message_id
                 b.add_message(message_id)
                 b.send(f"Отправка: {u['full_name']}")
@@ -699,7 +707,11 @@ def start_callback(update, context):
 
 
 def get_contact(update, context):
-    b = context.user_data['bot']
+    try:
+        b = context.user_data['bot']
+    except KeyError:
+        b = ChatBot(update, context)
+        context.user_data['bot'] = b
     num = update.message.contact.phone_number
     if num[0] != '+':
         num = '+' + num
