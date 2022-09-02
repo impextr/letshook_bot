@@ -66,6 +66,9 @@ class ChatBot:
             if markup:
                 self.create_menu_markup_buttons()
                 message_id = context.bot.send_message(self.chat_id, text=text, reply_markup=self.markup).message_id
+                assert self.chat_id == context.user_data['users'].chat_id, \
+                    f"при отправке не совпадает self.chat_id {self.chat_id} " \
+                    f"и users.chat_d {context.user_data['users'].chat_id}"
             else:
                 message_id = context.bot.send_message(self.chat_id, text=text).message_id
             self.add_message(message_id)
@@ -225,7 +228,7 @@ class ChatBot:
                 button1 = InlineKeyboardButton(text="Так",
                                                callback_data='Подтверждение брони окончательное')
                 button2 = InlineKeyboardButton(text="Відмова",
-                                               callback_data='Отказ от брони')
+                                               callback_data='Всі заклади')
                 self.markup = InlineKeyboardMarkup([[button1], [button2]])
             else:
                 button1 = InlineKeyboardButton(text='🔙Назад', callback_data='White ' + self.white)
@@ -267,16 +270,16 @@ class ChatBot:
         if self.user_name:
             text += f'К-во гостей: {self.qnty}\n'
         for i in self.booking_receivers if self.booking else self.complain_receivers:
-            self.chat_id = i
-            self.send(text=text)
+            self.context.bot.send_message(i, text=text)
         self.mode = 0
         self.booking = False
         self.complain = False
+        self.greating()
 
     def booking_approval(self, finaly=False):
         if finaly:
             text = 'Дякую!\nНайближчим часом ми зателефонуємо щоб підтвердити твоє бронювання'
-            self.menu_level = 2
+            self.menu_level = 0
             self.mode = 0
             self.send(text=text, markup=True)
             self.notify_about_event()
@@ -285,7 +288,10 @@ class ChatBot:
         имя = self.user_name
         кво_гостей = self.qnty
         телефон = self.phone_number
-        text = f"Підтверждення замовлення:\n{дата_и_время},\nім'я: {имя}\nгостей: {кво_гостей}\nтелефон:{телефон}?"
+        text = f"""Підтверждення замовлення:
+White {self.white}
+{дата_и_время},
+ім'я: {имя}\nгостей: {кво_гостей}\nтелефон:{телефон}?"""
         self.mode = 6
         self.send(text=text, markup=True)
 
@@ -346,12 +352,15 @@ class UsersList:
         3. Возвращает список пользователей из файла в виде словаря: <Key>=chat_id:<Prop> = список свойств в виде словаря
     """
 
-    def __init__(self, file_type, message):
+    def __init__(self, file_type, message, chat_id=None):
+        if chat_id is None:
+            chat_id = message.from_user.id
+        self.chat_id = chat_id
         self.file_type = file_type
         self.file_name = r'Data\Users.' + self.file_type
         self.message = message
         self.phone = ''
-        self.language_code = message.from_user.language_code
+        self.language_code = ''  # message.from_user.language_code
         self.users_list = []
         self.get_users_list()
         self.user = self.get_current__user()
@@ -411,7 +420,7 @@ class UsersList:
 
     def current_user_in_list(self):  # 04. Пользователь есть в списке?
         for i in self.users_list:
-            if i['chat_id'] == str(self.message.chat.id):
+            if i['chat_id'] == str(self.chat_id):
                 return True
         return False
 
@@ -431,7 +440,7 @@ class UsersList:
 
     def get_current__user(self):
         for i in self.users_list:
-            if i['chat_id'] == str(self.message.chat.id):
+            if i['chat_id'] == str(self.chat_id):
                 return i
         return None
 
@@ -443,6 +452,7 @@ class UsersList:
         return delta
 
     def update_phone(self, phone):
+
         self.user['phone'] = phone
         self.write_file()
 
@@ -474,10 +484,13 @@ def inlineKeyboard(update, context):
     except KeyError:
         b = ChatBot(update, context)
         context.user_data['bot'] = b
+        users = UsersList(file_type='json', message=update.message)
+        context.user_data.update({'users': users})
     b.delete_messages()
 
     button_data = update.callback_query.data
     if button_data == 'Всі заклади':
+        b.delete_messages()
         b.menu_level = 0
         b.greating()
     elif button_data == 'Лівий берег':
@@ -521,7 +534,11 @@ def inlineKeyboard(update, context):
                 phone = f" {user['phone']}, "
             s += f"{i+1}) {user['full_name']}, {phone} язык: {user['language_code']}\n"
         b.send(text=s)
-    elif button_data == 'Забукати столик':
+    elif button_data[:15] == 'Забукати столик':
+        if len(button_data) > 15:
+            b.white = button_data[15:]
+            users = UsersList(file_type='json', message=update.message, chat_id=b.chat_id)
+            context.user_data.update({'users': users})
         b.menu_level = 3
         b.booking = True
         b.mode = 1
@@ -593,13 +610,28 @@ def inlineKeyboard(update, context):
         b.send(text='Hello, admin!\nОтправь текст рассылки')
         b.spam = True
     elif button_data == 'Spam_yes':
-        users = b.context.user_data['users'].users_list
+        try:
+            users = b.context.user_data['users'].users_list
+        except KeyError or AttributeError:
+            b.send("Ошибка получения списка рассылки")
+            return
+        b.menu_level = 3
+        button1 = InlineKeyboardButton(text='⏰ Столик', callback_data='Забукати столик1')
+        button2 = InlineKeyboardButton(text='Головне меню', callback_data='Всі заклади')
+        markup = InlineKeyboardMarkup([[button1, button2]])
         for u in users:
-            context.bot.send_message(u['chat_id'], text=b.spam_text, timeout=30)
-            b.send(f"Отправка: {u['full_name']}")
-    if button_data[:5] == 'Spam_':
+            if str(b.chat_id) != u['chat_id']:
+                message_id = context.bot.send_message(u['chat_id'], text=b.spam_text, reply_markup=markup).message_id
+                b.add_message(message_id)
+                b.send(f"Отправка: {u['full_name']}")
         b.spam = False
         b.spam_text = ''
+        b.menu_level = 0
+        b.greating()
+    if button_data == 'Spam_no':
+        b.spam = False
+        b.spam_text = ''
+        b.menu_level = 0
         b.greating()
 
 
@@ -610,6 +642,8 @@ def get_answer_from_user(update, context):
     except KeyError:
         b = ChatBot(update, context)
         context.user_data['bot'] = b
+        users = UsersList(file_type='json', message=update.message)
+        context.user_data.update({'users': users})
 
     if b.spam:
         b.spam_text = get_text
@@ -617,7 +651,8 @@ def get_answer_from_user(update, context):
         button1 = InlineKeyboardButton(text='Отправить', callback_data='Spam_yes')
         button2 = InlineKeyboardButton(text='Отмена', callback_data='Spam_no')
         markup = InlineKeyboardMarkup([[button1, button2]])
-        context.bot.send_message(b.chat_id, text='Контроль текста рассылки:\n\n' + get_text, reply_markup=markup)
+        text = 'Контроль текста рассылки:\n\n' + get_text
+        b.add_message(context.bot.send_message(b.chat_id, text=text, reply_markup=markup).message_id)
 
     if b.mode == 1:
         b.user_name = get_text
@@ -673,7 +708,11 @@ def get_contact(update, context):
     if num[0] != '+':
         num = '+' + num
     b.phone_number = num
-    users = context.user_data['users']
+    try:
+        users = context.user_data['users']
+    except KeyError:
+        users = UsersList(file_type='json', message=update.message, chat_id=b.chat_id)
+        context.user_data.update({'users': users})
     users.update_phone(b.phone_number)
     b.delete_messages()
 
