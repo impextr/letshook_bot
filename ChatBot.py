@@ -352,13 +352,15 @@ class UsersList:
         3. Возвращает список пользователей из файла в виде словаря: <Key>=chat_id:<Prop> = список свойств в виде словаря
     """
 
-    def __init__(self, file_type, message, chat_id=None):
-        if chat_id is None:
-            chat_id = message.from_user.id
-        self.chat_id = chat_id
+    def __init__(self, file_type, update):
+        # if update is not None:
+        #     self.chat_id = update.effective_chat.id
+        # else:
+        #
+        self.chat_id = update.effective_user.id
         self.file_type = file_type
         self.file_name = r'Data\Users.' + self.file_type
-        self.message = message
+        self.message = update.message
         self.phone = ''
         self.language_code = ''  # message.from_user.language_code
         self.users_list = []
@@ -484,7 +486,7 @@ def inlineKeyboard(update, context):
     except KeyError:
         b = ChatBot(update, context)
         context.user_data['bot'] = b
-        users = UsersList(file_type='json', message=update.message)
+        users = UsersList(file_type='json', update=update)
         context.user_data.update({'users': users})
     b.delete_messages()
 
@@ -537,7 +539,7 @@ def inlineKeyboard(update, context):
     elif button_data[:15] == 'Забукати столик':
         if len(button_data) > 15:
             b.white = button_data[15:]
-            users = UsersList(file_type='json', message=update.message, chat_id=b.chat_id)
+            users = UsersList(file_type='json', update=update)
             context.user_data.update({'users': users})
         b.menu_level = 3
         b.booking = True
@@ -620,7 +622,7 @@ def inlineKeyboard(update, context):
         button1 = InlineKeyboardButton(text='⏰ Столик', callback_data='Забукати столик' + booking_hookah_number)
         button2 = InlineKeyboardButton(text='Головне меню', callback_data='Всі заклади')
         markup = InlineKeyboardMarkup([[button1, button2]])
-        file_name = 'under_construction1.png'
+        file_name = 'pict.jpg'
         photo = r'Data' '\\' + file_name
         if not os.path.isfile(photo):
             b.send(text=f'Файл фото не обнаружен: {photo}')
@@ -650,7 +652,7 @@ def get_answer_from_user(update, context):
     except KeyError:
         b = ChatBot(update, context)
         context.user_data['bot'] = b
-        users = UsersList(file_type='json', message=update.message)
+        users = UsersList(file_type='json', update=update)
         context.user_data.update({'users': users})
 
     if b.spam:
@@ -696,7 +698,7 @@ def get_answer_from_user(update, context):
 
 
 def start_callback(update, context):
-    users = UsersList(file_type='json', message=update.message)
+    users = UsersList(file_type='json', update=update)
     users.write_file()
 
     context.user_data.update({'users': users})
@@ -719,7 +721,7 @@ def get_contact(update, context):
     try:
         users = context.user_data['users']
     except KeyError:
-        users = UsersList(file_type='json', message=update.message, chat_id=b.chat_id)
+        users = UsersList(file_type='json', update=update)
         context.user_data.update({'users': users})
     users.update_phone(b.phone_number)
     b.delete_messages()
