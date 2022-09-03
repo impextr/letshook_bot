@@ -629,11 +629,14 @@ def inlineKeyboard(update, context):
             return
         for u in users:
             if str(b.chat_id) != u['chat_id']:
-                message_id = context.bot.send_photo(u['chat_id'], photo=open(photo, 'rb'), timeout=30).message_id
-                b.add_message(message_id)
-                message_id = context.bot.send_message(u['chat_id'], text=b.spam_text, reply_markup=markup).message_id
-                b.add_message(message_id)
-                b.send(f"Отправка: {u['full_name']}")
+                try:
+                    message_id = context.bot.send_photo(u['chat_id'], photo=open(photo, 'rb'), timeout=30).message_id
+                    b.add_message(message_id)
+                    message_id = context.bot.send_message(u['chat_id'], text=b.spam_text, reply_markup=markup).message_id
+                    b.add_message(message_id)
+                    b.send(f"Отправка: {u['full_name']}")
+                except:
+                    b.send(f"Ошибка отправки, пропущен: {u['full_name']}")
         b.spam = False
         b.spam_text = ''
         b.menu_level = 0
