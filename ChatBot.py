@@ -352,7 +352,7 @@ class UsersList:
         3. Возвращает список пользователей из файла в виде словаря: <Key>=chat_id:<Prop> = список свойств в виде словаря
     """
 
-    def __init__(self, file_type, update):
+    def __init__(self, update, file_type='json'):
         # if update is not None:
         #     self.chat_id = update.effective_chat.id
         # else:
@@ -362,7 +362,7 @@ class UsersList:
         self.file_name = r'Data\Users.' + self.file_type
         self.message = update.message
         self.phone = ''
-        self.language_code = ''  # message.from_user.language_code
+        self.language_code = update.effective_user.language_code
         self.users_list = []
         self.get_users_list()
         self.user = self.get_current__user()
@@ -486,7 +486,7 @@ def inlineKeyboard(update, context):
     except KeyError:
         b = ChatBot(update, context)
         context.user_data['bot'] = b
-        users = UsersList(file_type='json', update=update)
+        users = UsersList(update)
         context.user_data.update({'users': users})
     b.delete_messages()
 
@@ -539,7 +539,7 @@ def inlineKeyboard(update, context):
     elif button_data[:15] == 'Забукати столик':
         if len(button_data) > 15:
             b.white = button_data[15:]
-            users = UsersList(file_type='json', update=update)
+            users = UsersList(update)
             context.user_data.update({'users': users})
         b.menu_level = 3
         b.booking = True
@@ -655,7 +655,7 @@ def get_answer_from_user(update, context):
     except KeyError:
         b = ChatBot(update, context)
         context.user_data['bot'] = b
-        users = UsersList(file_type='json', update=update)
+        users = UsersList(update)
         context.user_data.update({'users': users})
 
     if b.spam:
@@ -701,7 +701,7 @@ def get_answer_from_user(update, context):
 
 
 def start_callback(update, context):
-    users = UsersList(file_type='json', update=update)
+    users = UsersList(update)
     users.write_file()
 
     context.user_data.update({'users': users})
@@ -724,7 +724,7 @@ def get_contact(update, context):
     try:
         users = context.user_data['users']
     except KeyError:
-        users = UsersList(file_type='json', update=update)
+        users = UsersList(update)
         context.user_data.update({'users': users})
     users.update_phone(b.phone_number)
     b.delete_messages()
