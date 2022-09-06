@@ -272,6 +272,7 @@ class ChatBot:
         for i in self.booking_receivers if self.booking else self.complain_receivers:
             self.context.bot.send_message(i, text=text)
         log = Log(self)
+        text = text.replace('\n', '')
         log.set(action_type=2, action=f'{event}: {text}')
 
         self.mode = 0
@@ -552,6 +553,10 @@ def inlineKeyboard(update, context):
         b.send(text='Щоб зателефонувати, натисни на номер.')
         b.send(text=b.get_hookah_attr('Телефон'), markup=True)
     elif button_data == 'Get file':
+        if os.path.isfile(r'Data\log.csv'):
+            context.bot.send_document(b.chat_id, open(r'Data\log.csv', 'rb'), timeout=30)
+        else:
+            b.send(text='Не обнаружен файл настроек "options.json"')
         if os.path.isfile(r'Data\options.json'):
             context.bot.send_document(b.chat_id, open(r'Data\options.json', 'rb'), timeout=30)
         else:
@@ -817,7 +822,7 @@ dp.add_handler(InlineQueryHandler(inlineKeyboard, pass_update_queue=True, pass_j
 dp.add_handler(CallbackQueryHandler(inlineKeyboard))
 
 try:
-    updater.start_polling(timeout=1000, poll_interval=0.01, drop_pending_updates=True)
+    updater.start_polling()
 except telegram.error.NetworkError as e:
     print(f'Ошибка запуска бота: {e}')
 #  endregion
