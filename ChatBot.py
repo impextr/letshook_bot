@@ -5,7 +5,7 @@ import locale as loc
 import os
 import platform
 
-
+import telegram
 from telegram import *
 from telegram.ext import *
 
@@ -271,6 +271,9 @@ class ChatBot:
             text += f'К-во гостей: {self.qnty}\n'
         for i in self.booking_receivers if self.booking else self.complain_receivers:
             self.context.bot.send_message(i, text=text)
+        log = Log(self)
+        log.set(action_type=2, action=f'{event}: {text}')
+
         self.mode = 0
         self.booking = False
         self.complain = False
@@ -458,6 +461,34 @@ class UsersList:
         self.user['phone'] = phone
         self.write_file()
 
+
+class Log:
+    """Фиксация ключевых событий в csv-файле"""
+
+    def __init__(self, b):
+        self.timestamp = str(dt.datetime.now())
+        self.chat_id = b.update.effective_chat.id
+        self.full_name = b.update.effective_chat.full_name
+        self.white = b.white
+        self.action_type = None
+        self.action = None
+        self.error = None
+
+    def set(self, action_type, action, error=None):
+        self.action_type = action_type
+        self.action = action
+        self.error = error
+        filename = r'Data\log.csv'
+        is_file = os.path.isfile(filename)
+        with open(filename, 'a', encoding="cp1251", newline='') as __file:
+            headers = ['timestamp', 'white', 'chat_id', 'full_name', 'action_type', 'action', 'error']
+            __writer = csv.writer(__file, delimiter=';')
+            if not is_file:
+                __writer.writerow(headers)
+            __writer.writerow([self.timestamp, self.white, self.chat_id, self.full_name, self.action_type, self.action,
+                               self.error])
+
+
 # endregion
 
 
@@ -491,6 +522,8 @@ def inlineKeyboard(update, context):
     b.delete_messages()
 
     button_data = update.callback_query.data
+    log = Log(b)
+    log.set(action_type=1, action=button_data)
     if button_data == 'Всі заклади':
         b.delete_messages()
         b.menu_level = 0
@@ -632,7 +665,8 @@ def inlineKeyboard(update, context):
                 try:
                     message_id = context.bot.send_photo(u['chat_id'], photo=open(photo, 'rb'), timeout=30).message_id
                     b.add_message(message_id)
-                    message_id = context.bot.send_message(u['chat_id'], text=b.spam_text, reply_markup=markup).message_id
+                    message_id = context.bot.send_message(u['chat_id'], text=b.spam_text, reply_markup=markup).\
+                        message_id
                     b.add_message(message_id)
                     b.send(f"Отправка: {u['full_name']}")
                 except:
@@ -649,7 +683,10 @@ def inlineKeyboard(update, context):
 
 
 def get_answer_from_user(update, context):
-    get_text = update.message.text
+    try:
+        get_text = update.message.text
+    except AttributeError:
+        return
     try:
         b = context.user_data['bot']
     except KeyError:
@@ -708,6 +745,8 @@ def start_callback(update, context):
 
     b = ChatBot(update, context)
     context.user_data['bot'] = b
+    l = Log(b)
+    l.set(action_type=0, action='start')
     b.greating()
 
 
@@ -777,5 +816,8 @@ dp.add_handler(MessageHandler(filters=Filters.document, callback=get_file))
 dp.add_handler(InlineQueryHandler(inlineKeyboard, pass_update_queue=True, pass_job_queue=True, pass_user_data=True))
 dp.add_handler(CallbackQueryHandler(inlineKeyboard))
 
-updater.start_polling()
+try:
+    updater.start_polling(timeout=1000, poll_interval=0.01, drop_pending_updates=True)
+except telegram.error.NetworkError as e:
+    print(f'Ошибка запуска бота: {e}')
 #  endregion
