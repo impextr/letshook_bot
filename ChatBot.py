@@ -162,7 +162,9 @@ class ChatBot:
                 button3 = InlineKeyboardButton(text='Получить файлы настроек', callback_data='Get file')
                 button4 = InlineKeyboardButton(text='Подписчики', callback_data='Get followers')
                 button5 = InlineKeyboardButton(text='Рассылка', callback_data='Spam')
-                l1.append([button3, button4, button5])
+                l1.append([button3])
+                l1.append([button4])
+                l1.append([button5])
             self.markup = InlineKeyboardMarkup(l1)
         elif self.menu_level == 1:
             d = self.hookahs
