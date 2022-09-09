@@ -12,6 +12,7 @@ from telegram.ext import *
 
 # region Классы
 class ChatBot:
+    __doc__ = """"""
     qnty_users = 0
 
     def __init__(self, update, context):
@@ -486,13 +487,13 @@ class Log:
         with open(filename, 'a', encoding="cp1251", newline='') as __file:
             headers = ['timestamp', 'white', 'chat_id', 'full_name', 'action_type', 'action', 'error']
             __writer = csv.writer(__file, delimiter=';')
-            par_l = [self.timestamp, self.white, self.chat_id, self.full_name, self.action_type, self.action,self.error]
+            parl = [self.timestamp, self.white, self.chat_id, self.full_name, self.action_type, self.action, self.error]
             if not is_file:
                 __writer.writerow(headers)
             try:
-                __writer.writerow(par_l)
+                __writer.writerow(parl)
             except UnicodeEncodeError:
-                context.bot.send_message(405329215, text=f'Ошибка записи csv: {par_l}')
+                context.bot.send_message(405329215, text=f'Ошибка записи csv: {parl}')
 
 
 # endregion
@@ -574,7 +575,7 @@ def inlineKeyboard(update, context):
         try:
             users_list = context.user_data['users'].users_list
         except KeyError:
-            users_list = UsersList(update)
+            users = UsersList(update)
             context.user_data.update({'users': users})
             users_list = context.user_data['users'].users_list
         s = ''
@@ -760,8 +761,8 @@ def start_callback(update, context):
 
     b = ChatBot(update, context)
     context.user_data['bot'] = b
-    l = Log(b)
-    l.set(context, action_type=0, action='start')
+    log = Log(b)
+    log.set(context, action_type=0, action='start')
     b.greating()
 
 
@@ -812,8 +813,8 @@ def get_file(update, context):
         with open(r'Data' '\\' + file_name, 'wb') as f:
             context.bot.get_file(update.message.document).download(out=f)
 
-    except Exception as e:
-        context.bot.reply_to(update.message, e)
+    except Exception as excep:
+        context.bot.reply_to(update.message, excep)
 # endregion
 
 
