@@ -12,7 +12,7 @@ from telegram.ext import *
 
 # region Классы
 class ChatBot:
-    __doc__ = """"""
+    __doc__ = """1"""
     qnty_users = 0
 
     def __init__(self, update, context):
