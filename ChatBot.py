@@ -17,10 +17,10 @@ class ChatBot:
 
     def __init__(self, update, context):
         ChatBot.qnty_users += 1
-
         self.chat_id = update.effective_chat.id
         self.update = update
         self.context = context
+        self.users = UsersList(update)
 
         self.options = load_json('options.json')
         self.hookahs = load_json('заведения.json')
@@ -67,7 +67,7 @@ class ChatBot:
             if markup:
                 self.create_menu_markup_buttons()
                 message_id = context.bot.send_message(self.chat_id, text=text, reply_markup=self.markup).message_id
-                assert self.chat_id == context.user_data['users'].chat_id, \
+                assert self.chat_id == int(self.users.get_current_user()['chat_id']), \
                     f"при отправке не совпадает self.chat_id {self.chat_id} " \
                     f"и users.chat_d {context.user_data['users'].chat_id}"
             else:
@@ -524,8 +524,6 @@ def inlineKeyboard(update, context):
     except KeyError:
         b = ChatBot(update, context)
         context.user_data['bot'] = b
-        users = UsersList(update)
-        context.user_data.update({'users': users})
     b.delete_messages()
 
     button_data = update.callback_query.data
@@ -547,10 +545,10 @@ def inlineKeyboard(update, context):
         b.menu_level = 2
         b.white = button_data[6:]
         d = b.hookahs[b.white]
-        text = d['Приветствие'] + f"\n\nЧас роботи: з {d['Открывается']} до {d['Закрывается']} \n\n"
-        b.send(text=text)
-        text = 'Що саме тебе цікавить?'
-        b.send(text=text, photo=fr'White{b.white}\mw1.jpg', markup=True)
+        b.send(text=None, photo=fr'Data\White{b.white}\mw1.jpg')
+        b.send(text=d['Приветствие'] + f"\n\nЧас роботи: з {d['Открывается']} до {d['Закрывается']} \n\n")
+
+        b.send(text = 'Що саме тебе цікавить?', markup=True)
     elif button_data[:13] == 'Фотки закладу':
         b.white = button_data[13:]
         b.show_photos()
@@ -573,11 +571,9 @@ def inlineKeyboard(update, context):
             b.send(text='Не обнаружен файл с параметрами заведений "заведения.json"')
     elif button_data == 'Get followers':
         try:
-            users_list = context.user_data['users'].users_list
+            users_list = b.users.users_list
         except KeyError:
-            users = UsersList(update)
-            context.user_data.update({'users': users})
-            users_list = context.user_data['users'].users_list
+            users_list = UsersList(update).users_list
         s = ''
         for i, user in enumerate(users_list):
             phone = user['phone']
@@ -588,8 +584,6 @@ def inlineKeyboard(update, context):
     elif button_data[:15] == 'Забукати столик':
         if len(button_data) > 15:
             b.white = button_data[15:]
-            users = UsersList(update)
-            context.user_data.update({'users': users})
         b.menu_level = 3
         b.booking = True
         b.mode = 1
@@ -645,6 +639,7 @@ def inlineKeyboard(update, context):
         b.send(text=text)
 
         b.complain = True
+        b.booking = False
         b.mode = 2
         b.menu_level = 3
         text = 'Коли ти в нас був?\nОбери найближчу дату, або напиши в форматі "21.08.2022"?'
@@ -708,8 +703,6 @@ def get_answer_from_user(update, context):
     except KeyError:
         b = ChatBot(update, context)
         context.user_data['bot'] = b
-        users = UsersList(update)
-        context.user_data.update({'users': users})
 
     if b.spam:
         b.spam_text = get_text
@@ -754,12 +747,9 @@ def get_answer_from_user(update, context):
 
 
 def start_callback(update, context):
-    users = UsersList(update)
-    users.write_file()
-
-    context.user_data.update({'users': users})
 
     b = ChatBot(update, context)
+    b.users.write_file()
     context.user_data['bot'] = b
     log = Log(b)
     log.set(context, action_type=0, action='start')
@@ -776,12 +766,7 @@ def get_contact(update, context):
     if num[0] != '+':
         num = '+' + num
     b.phone_number = num
-    try:
-        users = context.user_data['users']
-    except KeyError:
-        users = UsersList(update)
-        context.user_data.update({'users': users})
-    users.update_phone(b.phone_number)
+    b.users.update_phone(b.phone_number)
     b.delete_messages()
 
     if b.booking:
@@ -808,11 +793,8 @@ def get_file(update, context):
         b.send(text='Не верное имя файла.')
         return
     try:
-        # file = context.bot.get_file(update.message.document.file_id)
-
         with open(r'Data' '\\' + file_name, 'wb') as f:
             context.bot.get_file(update.message.document).download(out=f)
-
     except Exception as excep:
         context.bot.reply_to(update.message, excep)
 # endregion
