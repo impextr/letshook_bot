@@ -572,7 +572,7 @@ def inlineKeyboard(update, context):
             b.send(text='Не обнаружен файл с параметрами заведений "заведения.json"')
     elif button_data == 'Get followers':
         try:
-            users_list = context.user_data['users']
+            users_list = context.user_data['users'].users_list
         except KeyError:
             users_list = UsersList(update)
             context.user_data.update({'users': users})
