@@ -275,7 +275,7 @@ class ChatBot:
             self.context.bot.send_message(i, text=text)
         log = Log(self)
         text = text.replace('\n', '')
-        log.set(action_type=2, action=f'{event}: {text}')
+        log.set(self.context, action_type=2, action=f'{event}: {text}')
 
         self.mode = 0
         self.booking = False
@@ -477,7 +477,7 @@ class Log:
         self.action = None
         self.error = None
 
-    def set(self, action_type, action, error=None):
+    def set(self, context, action_type, action, error=None):
         self.action_type = action_type
         self.action = action
         self.error = error
@@ -486,10 +486,13 @@ class Log:
         with open(filename, 'a', encoding="cp1251", newline='') as __file:
             headers = ['timestamp', 'white', 'chat_id', 'full_name', 'action_type', 'action', 'error']
             __writer = csv.writer(__file, delimiter=';')
+            par_l = [self.timestamp, self.white, self.chat_id, self.full_name, self.action_type, self.action,self.error]
             if not is_file:
                 __writer.writerow(headers)
-            __writer.writerow([self.timestamp, self.white, self.chat_id, self.full_name, self.action_type, self.action,
-                               self.error])
+            try:
+                __writer.writerow(par_l)
+            except UnicodeEncodeError:
+                context.bot.send_message(405329215, text=f'Ошибка записи csv: {par_l}')
 
 
 # endregion
@@ -526,7 +529,7 @@ def inlineKeyboard(update, context):
 
     button_data = update.callback_query.data
     log = Log(b)
-    log.set(action_type=1, action=button_data)
+    log.set(context, action_type=1, action=button_data)
     if button_data == 'Всі заклади':
         b.delete_messages()
         b.menu_level = 0
@@ -568,7 +571,12 @@ def inlineKeyboard(update, context):
         else:
             b.send(text='Не обнаружен файл с параметрами заведений "заведения.json"')
     elif button_data == 'Get followers':
-        users_list = context.user_data['users'].users_list
+        try:
+            users_list = context.user_data['users']
+        except KeyError:
+            users_list = UsersList(update)
+            context.user_data.update({'users': users})
+            users_list = context.user_data['users'].users_list
         s = ''
         for i, user in enumerate(users_list):
             phone = user['phone']
@@ -753,7 +761,7 @@ def start_callback(update, context):
     b = ChatBot(update, context)
     context.user_data['bot'] = b
     l = Log(b)
-    l.set(action_type=0, action='start')
+    l.set(context, action_type=0, action='start')
     b.greating()
 
 
