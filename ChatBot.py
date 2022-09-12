@@ -21,6 +21,7 @@ class ChatBot:
         self.update = update
         self.context = context
         self.users = UsersList(update)
+        self.remove_reply_keyboard = False
 
         self.options = load_json('options.json')
         self.hookahs = load_json('заведения.json')
@@ -130,11 +131,15 @@ class ChatBot:
         return True
 
     def greating(self):
-        self.send(photo=self.options['Имя файла общей заставки'])
+        self.send(photo=r'Data' '\\' + self.options['Имя файла общей заставки'])
         try:
             user_name = self.update.effective_user.full_name
         except ValueError or KeyError:
             user_name = ''
+        if self.remove_reply_keyboard:
+            markup = ReplyKeyboardRemove(selective=False)
+            message_id = self.context.bot.send_message(self.chat_id, text='', reply_markup=markup).message_id
+            self.add_message(message_id)
         self.send(text=self.options['Общее приветствие 1'].format(user_name=user_name))
         self.send(text=self.options['Общее приветствие 2'], markup=True)
 
@@ -146,8 +151,6 @@ class ChatBot:
                 self.context.bot.delete_message(self.chat_id, message_id=i)
             except TelegramError:
                 pass
-                # if not self.context.bot.delete_message(self.chat_id, message_id=i):
-            #     print(f'Сообщение не удалось удалить: {i}')
         self.messages = []
 
     def add_message(self, message_id):
@@ -236,10 +239,6 @@ class ChatBot:
             else:
                 button1 = InlineKeyboardButton(text='🔙Назад', callback_data='White ' + self.white)
                 self.markup = InlineKeyboardMarkup([[button1]])
-
-        if not isinstance(self.markup, str):
-            self.markup = self.markup.to_json()
-        return
 
     def show_photos(self):
         self.menu_level = 3
@@ -484,7 +483,7 @@ class Log:
         self.error = error
         filename = r'Data\log.csv'
         is_file = os.path.isfile(filename)
-        with open(filename, 'a', encoding="cp1251", newline='') as __file:
+        with open(filename, 'a', encoding="utf-8", newline='') as __file:
             headers = ['timestamp', 'white', 'chat_id', 'full_name', 'action_type', 'action', 'error']
             __writer = csv.writer(__file, delimiter=';')
             parl = [self.timestamp, self.white, self.chat_id, self.full_name, self.action_type, self.action, self.error]
@@ -499,7 +498,7 @@ class Log:
 # endregion
 
 
-# region initialization
+# region initialization and others
 def load_json(filename):
     full_path = fR"Data\{filename}"
     with open(full_path, 'rt', encoding='utf-8') as file:
@@ -507,6 +506,11 @@ def load_json(filename):
     if 'Список администраторов' in d:
         d['Список администраторов'] = [int(i) for i in d['Список администраторов']]
     return d
+
+
+def create_start():
+    buttons = [KeyboardButton(text="/start")]
+    return ReplyKeyboardMarkup(resize_keyboard=True, keyboard=[buttons], selective=False, one_time_keyboard=True)
 
 
 options = load_json('options.json')
@@ -548,7 +552,7 @@ def inlineKeyboard(update, context):
         b.send(text=None, photo=fr'Data\White{b.white}\mw1.jpg')
         b.send(text=d['Приветствие'] + f"\n\nЧас роботи: з {d['Открывается']} до {d['Закрывается']} \n\n")
 
-        b.send(text = 'Що саме тебе цікавить?', markup=True)
+        b.send(text='Що саме тебе цікавить?', markup=True)
     elif button_data[:13] == 'Фотки закладу':
         b.white = button_data[13:]
         b.show_photos()
@@ -558,17 +562,17 @@ def inlineKeyboard(update, context):
         b.send(text=b.get_hookah_attr('Телефон'), markup=True)
     elif button_data == 'Get file':
         if os.path.isfile(r'Data\log.csv'):
-            context.bot.send_document(b.chat_id, open(r'Data\log.csv', 'rb'), timeout=30)
+            context.bot.send_document(b.chat_id, open(r'Data\log.csv', 'rb'), timeout=30, reply_markup=create_start())
         else:
-            b.send(text='Не обнаружен файл настроек "options.json"')
+            b.send(text='Не обнаружен файл настроек "options.json"', reply_markup=create_start())
         if os.path.isfile(r'Data\options.json'):
-            context.bot.send_document(b.chat_id, open(r'Data\options.json', 'rb'), timeout=30)
+            context.bot.send_document(b.chat_id, open(r'Data\options.json', 'rb'), timeout=30, reply_markup=create_start())
         else:
-            b.send(text='Не обнаружен файл настроек "options.json"')
+            b.send(text='Не обнаружен файл настроек "options.json"', reply_markup=create_start())
         if os.path.isfile(r'Data\заведения.json'):
-            context.bot.send_document(b.chat_id, open(r'Data\заведения.json', 'rb'), timeout=30)
+            context.bot.send_document(b.chat_id, open(r'Data\заведения.json', 'rb'), timeout=30, reply_markup=create_start())
         else:
-            b.send(text='Не обнаружен файл с параметрами заведений "заведения.json"')
+            b.send(text='Не обнаружен файл с параметрами заведений "заведения.json"', reply_markup=create_start())
     elif button_data == 'Get followers':
         try:
             users_list = b.users.users_list
@@ -580,7 +584,7 @@ def inlineKeyboard(update, context):
             if phone:
                 phone = f" {user['phone']}, "
             s += f"{i+1}) {user['full_name']}, {phone} язык: {user['language_code']}\n"
-        b.send(text=s)
+        context.bot.send_message(b.chat_id, text=s, timeout=30, reply_markup=create_start())
     elif button_data[:15] == 'Забукати столик':
         if len(button_data) > 15:
             b.white = button_data[15:]
@@ -746,8 +750,7 @@ def get_answer_from_user(update, context):
             b.notify_about_event()
 
 
-def start_callback(update, context):
-
+def start(update, context):
     b = ChatBot(update, context)
     b.users.write_file()
     context.user_data['bot'] = b
@@ -806,7 +809,7 @@ def get_file(update, context):
 updater = Updater(my_token)
 dp = updater.dispatcher
 
-dp.add_handler(CommandHandler("start", start_callback))
+dp.add_handler(CommandHandler("start", start))
 dp.add_handler(MessageHandler(filters=Filters.text, callback=get_answer_from_user))
 dp.add_handler(MessageHandler(filters=Filters.contact, callback=get_contact))
 dp.add_handler(MessageHandler(filters=Filters.location, callback=get_location))
