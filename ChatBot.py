@@ -68,9 +68,6 @@ class ChatBot:
             if markup:
                 self.create_menu_markup_buttons()
                 message_id = context.bot.send_message(self.chat_id, text=text, reply_markup=self.markup).message_id
-                assert self.chat_id == int(self.users.get_current_user()['chat_id']), \
-                    f"при отправке не совпадает self.chat_id {self.chat_id} " \
-                    f"и users.chat_d {context.user_data['users'].chat_id}"
             else:
                 message_id = context.bot.send_message(self.chat_id, text=text).message_id
             self.add_message(message_id)
