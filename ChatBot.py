@@ -134,7 +134,7 @@ class ChatBot:
         except ValueError or KeyError:
             user_name = ''
         if self.remove_reply_keyboard:
-            markup = ReplyKeyboardRemove(selective=False)
+            markup = ReplyKeyboardRemove()
             message_id = self.context.bot.send_message(self.chat_id, text='', reply_markup=markup).message_id
             self.add_message(message_id)
         self.send(text=self.options['Общее приветствие 1'].format(user_name=user_name))
@@ -223,7 +223,6 @@ class ChatBot:
                     buttons.append(button2)
                 self.markup = ReplyKeyboardMarkup(resize_keyboard=True,
                                                   keyboard=[buttons],
-                                                  selective=False,
                                                   one_time_keyboard=True,
                                                   input_field_placeholder='')
 
@@ -507,7 +506,7 @@ def load_json(filename):
 
 def create_start():
     buttons = [KeyboardButton(text="/start")]
-    return ReplyKeyboardMarkup(resize_keyboard=True, keyboard=[buttons], selective=False, one_time_keyboard=True)
+    return ReplyKeyboardMarkup(resize_keyboard=True, keyboard=[buttons])
 
 
 options = load_json('options.json')
@@ -580,8 +579,12 @@ def inlineKeyboard(update, context):
             phone = user['phone']
             if phone:
                 phone = f" {user['phone']}, "
-            s += f"{i+1}) {user['full_name']}, {phone} язык: {user['language_code']}\n"
-        context.bot.send_message(b.chat_id, text=s, timeout=30, reply_markup=create_start())
+            if not i%100:
+                s += f"{i+1}) {user['full_name']}, {phone} язык: {user['language_code']}\n"
+            else:
+                context.bot.send_message(b.chat_id, text=s, timeout=30, reply_markup=create_start())
+                s = ''
+
     elif button_data[:15] == 'Забукати столик':
         if len(button_data) > 15:
             b.white = button_data[15:]
