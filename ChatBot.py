@@ -579,10 +579,10 @@ def inlineKeyboard(update, context):
             phone = user['phone']
             if phone:
                 phone = f" {user['phone']}, "
-            if not i%100:
+            if not i%100 and i:
                 s += f"{i+1}) {user['full_name']}, {phone} язык: {user['language_code']}\n"
             else:
-                context.bot.send_message(b.chat_id, text=s, timeout=30, reply_markup=create_start())
+                context.bot.send_message(b.chat_id, text=s, timeout=30)
                 s = ''
 
     elif button_data[:15] == 'Забукати столик':
