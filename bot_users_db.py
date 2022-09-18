@@ -41,9 +41,11 @@ class BotUser:
             print(f'Ошибка коннектора при подключения к БД: {error}')
             return None, error
         except sqlalchemy.exc.ProgrammingError:
+            my_create_engine()
             if not database_exists(cls.engine.url):
                 create_database(cls.engine.url)
                 if database_exists(cls.engine.url):
+
                     print(f"Database {d['name']} created succsessfull")
                 cls.base.metadata.create_all(cls.engine)
         Session = sessionmaker()
