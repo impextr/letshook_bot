@@ -4,6 +4,9 @@ import csv
 import locale as loc
 import os
 import platform
+# import bot_users_db as bu
+# import sqlalchemy as sql
+# import sqlalchemy.orm as sqlorm
 
 import telegram
 from telegram import *
@@ -81,6 +84,8 @@ class ChatBot:
             а) для резерва начальное время = текущий час + 1, конечно - за час до окончания работы заведения
             б) для жалобы начальное время = время начала работы заведения, конечное - текущий час минус 1 
         """
+        if not self.white:
+            self.greating()
         bottons_in_row = 3
 
         open_time = self.hookahs[self.white]['Открывается']
@@ -584,7 +589,8 @@ def inlineKeyboard(update, context):
             else:
                 context.bot.send_message(b.chat_id, text=s, timeout=30)
                 s = ''
-
+        if s:
+            context.bot.send_message(b.chat_id, text=s, timeout=20)
     elif button_data[:15] == 'Забукати столик':
         if len(button_data) > 15:
             b.white = button_data[15:]
@@ -751,6 +757,26 @@ def get_answer_from_user(update, context):
 
 
 def start(update, context):
+    # user = update.effective_user
+    # bot_user = bu.BotUser(user.id)
+    # if bot_user.user is None:
+    #     d = {"id": user.id,
+    #          "is_bot": user.is_bot,
+    #          "language_code": user.language_code,
+    #          "is_premium": user.is_premium,
+    #          "first_name": user.first_name,
+    #          "last_name": user.last_name,
+    #          "full_name": user.full_name,
+    #          "username": user.username}
+    #     bot_user.create(d)
+    #     print(f'Запись добавлена: {bot_user.user}' if bot_user.user else 'ошибка добавления')
+    # else:
+    #     print(f'Запись найдена: {bot_user.user}')
+    #     bot_user.last_datetime_update()
+    #     print('Дата и время обновлены')
+    #
+    #
+    # print('Дата и время обновлены')
     b = ChatBot(update, context)
     b.users.write_file()
     context.user_data['bot'] = b
@@ -816,6 +842,8 @@ dp.add_handler(MessageHandler(filters=Filters.location, callback=get_location))
 dp.add_handler(MessageHandler(filters=Filters.document, callback=get_file))
 dp.add_handler(InlineQueryHandler(inlineKeyboard, pass_update_queue=True, pass_job_queue=True, pass_user_data=True))
 dp.add_handler(CallbackQueryHandler(inlineKeyboard))
+
+#  session, er = bu.create_session()
 
 try:
     updater.start_polling()
