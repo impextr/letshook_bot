@@ -590,7 +590,7 @@ def inlineKeyboard(update, context):
                 context.bot.send_message(b.chat_id, text=s, timeout=30)
                 s = ''
         if s:
-            context.bot.send_message(b.chat_id, text=s, timeout=30)
+            context.bot.send_message(b.chat_id, text=s, timeout=20)
     elif button_data[:15] == 'Забукати столик':
         if len(button_data) > 15:
             b.white = button_data[15:]
