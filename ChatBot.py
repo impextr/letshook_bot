@@ -4,9 +4,9 @@ import csv
 import locale as loc
 import os
 import platform
-# import bot_users_db as bu
-# import sqlalchemy as sql
-# import sqlalchemy.orm as sqlorm
+import bot_users_db as bu
+import sqlalchemy as sql
+import sqlalchemy.orm as sqlorm
 
 import telegram
 from telegram import *
@@ -23,7 +23,7 @@ class ChatBot:
         self.chat_id = update.effective_chat.id
         self.update = update
         self.context = context
-        self.users = UsersList(update)
+        # self.users = UsersList(update)
         self.remove_reply_keyboard = False
 
         self.options = load_json('options.json')
@@ -352,120 +352,6 @@ White {self.white}
         return self.hookahs[self.white][attr_name]
 
 
-class UsersList:
-    """
-        1. Читает данные из файла <file_name> формата <fily_type>
-        2. Если файл не найден, то создаёт его и записывает
-        3. Возвращает список пользователей из файла в виде словаря: <Key>=chat_id:<Prop> = список свойств в виде словаря
-    """
-
-    def __init__(self, update, file_type='json'):
-        # if update is not None:
-        #     self.chat_id = update.effective_chat.id
-        # else:
-        #
-        self.chat_id = update.effective_user.id
-        self.file_type = file_type
-        self.file_name = r'Data\Users.' + self.file_type
-        self.message = update.message
-        self.phone = ''
-        self.language_code = update.effective_user.language_code
-        self.users_list = []
-        self.get_users_list()
-        self.user = self.get_current__user()
-
-    def get_users_list(self):
-        __file_exit = os.path.isfile(self.file_name)
-        if not __file_exit:
-            self.create_file()  # 02. создаёт пустой файл заданного типа
-        self.read_users_list()  # 03. Прочитать список пользователей из файла
-        if not self.current_user_in_list():  # # 04. Пользователь есть в списке?
-            self.add_user()                 # 05. Добавить пользователя в список
-            self.write_file(mode='a')     # 06. Записать список пользователей в файл
-
-    def write_file(self, mode='w'):
-        if self.file_type == 'json':
-            with open(self.file_name, 'wt', encoding='utf-8') as __file:
-                json.dump(self.users_list, __file, indent=2, ensure_ascii=False)
-        elif self.file_type == 'csv':
-            with open(r'Data\users.csv', mode, encoding="utf-8") as __file:
-                __writer = csv.writer(__file, delimiter=';')
-                for i in self.users_list:
-                    __writer.writerow([i['chat_id'],
-                                       i['full_name'],
-                                       i['created'],
-                                       i['last'],
-                                       i['language_code']])
-
-    def get_current_user(self):
-        datetime_now_str = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        return {'chat_id': str(self.message.chat.id),
-                'full_name': self.message.from_user.full_name,
-                'phone': self.phone,
-                'created': datetime_now_str,
-                'last': datetime_now_str,
-                'language_code': self.language_code}
-
-    def create_file(self):
-        self.__doc__ = 'Создаёт и записывает пустой файл'
-        if self.file_type == 'json':
-            __users_list = []
-            with open(self.file_name, 'w') as __file:
-                json.dump(__users_list, __file, indent=2)
-        elif self.file_type == 'csv':
-            with open(r'Data\users.csv', 'a', encoding="utf-8") as __file:
-                __file.close()
-
-    def read_users_list(self):
-        # 02. Прочитать список пользователей из файла
-        if self.file_type == 'json':
-            with open(self.file_name, 'r', encoding="utf-8") as file:
-                self.users_list = json.load(file)
-                if self.users_list[0].get('phone') is None:
-                    for i in self.users_list:
-                        i['phone'] = ''
-        elif self.file_type == 'csv':
-            self.read_userslist_from_csv()
-
-    def current_user_in_list(self):  # 04. Пользователь есть в списке?
-        for i in self.users_list:
-            if i['chat_id'] == str(self.chat_id):
-                return True
-        return False
-
-    def add_user(self):
-        self.users_list.append(self.get_current_user())
-
-    def read_userslist_from_csv(self):
-        with open(self.file_name, 'r', encoding="utf-8") as file:
-            __reader = csv.reader(file, delimiter=';')
-            for row in __reader:
-                if len(row) > 0:
-                    self.users_list.append({'chat_id': row[0],
-                                            'full_name': row[1],
-                                            'created': row[2],
-                                            'last': row[3],
-                                            'language_code': row[4]})
-
-    def get_current__user(self):
-        for i in self.users_list:
-            if i['chat_id'] == str(self.chat_id):
-                return i
-        return None
-
-    def get_timedelta(self):
-        if self.user is None:
-            return 0
-        delta = dt.datetime.now() - dt.datetime.strptime(self.user['last'], "%Y-%m-%d %H:%M:%S")
-        self.user['last'] = dt.datetime.strftime(dt.datetime.now(), "%Y-%m-%d %H:%M:%S")
-        return delta
-
-    def update_phone(self, phone):
-
-        self.user['phone'] = phone
-        self.write_file()
-
-
 class Log:
     """Фиксация ключевых событий в csv-файле"""
 
@@ -494,8 +380,6 @@ class Log:
                 __writer.writerow(parl)
             except UnicodeEncodeError:
                 context.bot.send_message(405329215, text=f'Ошибка записи csv: {parl}')
-
-
 # endregion
 
 
@@ -530,6 +414,7 @@ def inlineKeyboard(update, context):
         b = ChatBot(update, context)
         context.user_data['bot'] = b
     b.delete_messages()
+    bot_user = context.user_data['bot_user']
 
     button_data = update.callback_query.data
     log = Log(b)
@@ -575,17 +460,20 @@ def inlineKeyboard(update, context):
         else:
             b.send(text='Не обнаружен файл с параметрами заведений "заведения.json"', reply_markup=create_start())
     elif button_data == 'Get followers':
-        try:
-            users_list = b.users.users_list
-        except KeyError:
-            users_list = UsersList(update).users_list
+        # try:
+        #     users_list = b.users.users_list
+        # except KeyError:
+        #     users_list = UsersList(update).users_list
+        s, er = bot_user.create_session()
+        users_list = bu.User.get_users_list(s)
+
         s = ''
         for i, user in enumerate(users_list):
-            phone = user['phone']
+            phone = user.phone_number
             if phone:
-                phone = f" {user['phone']}, "
+                phone = f" {user.phone_number}, "
             if (i+1) % 50:
-                s += f"{i+1}) {user['full_name']}, {phone} язык: {user['language_code']}\n"
+                s += f"{i+1}) {user.full_name}, {phone} язык: {user.language_code}\n"
             else:
                 context.bot.send_message(b.chat_id, text=s, timeout=30)
                 s = ''
@@ -667,7 +555,9 @@ def inlineKeyboard(update, context):
         b.spam = True
     elif button_data == 'Spam_yes':
         try:
-            users = b.context.user_data['users'].users_list
+            # users = b.context.user_data['users'].users_list
+            s, er = bu.create_session()
+            users_list = User.get_users_list(s)
         except KeyError or AttributeError:
             b.send("Ошибка получения списка рассылки")
             return
@@ -681,17 +571,17 @@ def inlineKeyboard(update, context):
         if not os.path.isfile(photo):
             b.send(text=f'Файл фото не обнаружен: {photo}')
             return
-        for u in users:
+        for u in users_list:
             if str(b.chat_id) != u['chat_id']:
                 try:
-                    message_id = context.bot.send_photo(u['chat_id'], photo=open(photo, 'rb'), timeout=30).message_id
+                    message_id = context.bot.send_photo(u.id, photo=open(photo, 'rb'), timeout=30).message_id
                     b.add_message(message_id)
-                    message_id = context.bot.send_message(u['chat_id'], text=b.spam_text, reply_markup=markup).\
+                    message_id = context.bot.send_message(u.id, text=b.spam_text, reply_markup=markup).\
                         message_id
                     b.add_message(message_id)
-                    b.send(f"Отправка: {u['full_name']}")
+                    b.send(f"Отправка: {u.full_name}")
                 except:
-                    b.send(f"Ошибка отправки, пропущен: {u['full_name']}")
+                    b.send(f"Ошибка отправки, пропущен: {u.full_name}")
         b.spam = False
         b.spam_text = ''
         b.menu_level = 0
@@ -757,29 +647,24 @@ def get_answer_from_user(update, context):
 
 
 def start(update, context):
-    # user = update.effective_user
-    # bot_user = bu.BotUser(user.id)
-    # if bot_user.user is None:
-    #     d = {"id": user.id,
-    #          "is_bot": user.is_bot,
-    #          "language_code": user.language_code,
-    #          "is_premium": user.is_premium,
-    #          "first_name": user.first_name,
-    #          "last_name": user.last_name,
-    #          "full_name": user.full_name,
-    #          "username": user.username}
-    #     bot_user.create(d)
-    #     print(f'Запись добавлена: {bot_user.user}' if bot_user.user else 'ошибка добавления')
-    # else:
-    #     print(f'Запись найдена: {bot_user.user}')
-    #     bot_user.last_datetime_update()
-    #     print('Дата и время обновлены')
-    #
-    #
-    # print('Дата и время обновлены')
+    user = update.effective_user
+    bot_user = bu.BotUser(user.id)
+    if bot_user.user is None:
+        d = {"id": user.id,
+             "is_bot": user.is_bot,
+             "language_code": user.language_code,
+             "is_premium": user.is_premium,
+             "first_name": user.first_name,
+             "last_name": user.last_name,
+             "full_name": user.full_name,
+             "username": user.username}
+        bot_user.create(d)
+    else:
+        bot_user.last()
     b = ChatBot(update, context)
-    b.users.write_file()
+    # b.users.write_file()
     context.user_data['bot'] = b
+    context.user_data['bot_user'] = bot_user
     log = Log(b)
     log.set(context, action_type=0, action='start')
     b.greating()
@@ -792,10 +677,12 @@ def get_contact(update, context):
         b = ChatBot(update, context)
         context.user_data['bot'] = b
     num = update.message.contact.phone_number
+    bot_user = context.user_data['bot_user']
+    bot_user.phone_number(num)
     if num[0] != '+':
         num = '+' + num
     b.phone_number = num
-    b.users.update_phone(b.phone_number)
+    # b.users.update_phone(b.phone_number)
     b.delete_messages()
 
     if b.booking:
