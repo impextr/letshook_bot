@@ -5,8 +5,6 @@ import locale as loc
 import os
 import platform
 import bot_users_db as bu
-import sqlalchemy as sql
-import sqlalchemy.orm as sqlorm
 
 import telegram
 from telegram import *
@@ -15,7 +13,6 @@ from telegram.ext import *
 
 # region Классы
 class ChatBot:
-    __doc__ = """1"""
     qnty_users = 0
 
     def __init__(self, update, context):
@@ -23,7 +20,6 @@ class ChatBot:
         self.chat_id = update.effective_chat.id
         self.update = update
         self.context = context
-        # self.users = UsersList(update)
         self.remove_reply_keyboard = False
 
         self.options = load_json('options.json')
@@ -452,20 +448,17 @@ def inlineKeyboard(update, context):
         if os.path.isfile(r'Data\log.csv'):
             context.bot.send_document(b.chat_id, open(r'Data\log.csv', 'rb'), timeout=30, reply_markup=create_start())
         else:
-            b.send(text='Не обнаружен файл настроек "options.json"', reply_markup=create_start())
+            b.send(text='Не обнаружен файл настроек "options.json"')
         if os.path.isfile(r'Data\options.json'):
-            context.bot.send_document(b.chat_id, open(r'Data\options.json', 'rb'), timeout=30, reply_markup=create_start())
+            context.bot.send_document(b.chat_id, open(r'Data\options.json', 'rb'), timeout=30)
         else:
-            b.send(text='Не обнаружен файл настроек "options.json"', reply_markup=create_start())
+            b.send(text='Не обнаружен файл настроек "options.json"')
         if os.path.isfile(r'Data\заведения.json'):
-            context.bot.send_document(b.chat_id, open(r'Data\заведения.json', 'rb'), timeout=30, reply_markup=create_start())
+            context.bot.send_document(b.chat_id, open(r'Data\заведения.json', 'rb'), timeout=30,
+                                      reply_markup=create_start())
         else:
-            b.send(text='Не обнаружен файл с параметрами заведений "заведения.json"', reply_markup=create_start())
+            b.send(text='Не обнаружен файл с параметрами заведений "заведения.json"')
     elif button_data == 'Get followers':
-        # try:
-        #     users_list = b.users.users_list
-        # except KeyError:
-        #     users_list = UsersList(update).users_list
         s, er = bot_user.create_session()
         users_list = bu.User.get_users_list(s)
 
@@ -474,6 +467,8 @@ def inlineKeyboard(update, context):
             phone = user.phone_number
             if phone:
                 phone = f" {user.phone_number}, "
+            else:
+                phone = ''
             if (i+1) % 50:
                 s += f"{i+1}) {user.full_name}, {phone} язык: {user.language_code}\n"
             else:
@@ -557,9 +552,8 @@ def inlineKeyboard(update, context):
         b.spam = True
     elif button_data == 'Spam_yes':
         try:
-            # users = b.context.user_data['users'].users_list
-            s, er = bu.create_session()
-            users_list = User.get_users_list(s)
+            s, er = bot_user.create_session()
+            users_list = bu.User.get_users_list(s)
         except KeyError or AttributeError:
             b.send("Ошибка получения списка рассылки")
             return
@@ -574,7 +568,7 @@ def inlineKeyboard(update, context):
             b.send(text=f'Файл фото не обнаружен: {photo}')
             return
         for u in users_list:
-            if str(b.chat_id) != u['chat_id']:
+            if b.chat_id != u.id:
                 try:
                     message_id = context.bot.send_photo(u.id, photo=open(photo, 'rb'), timeout=30).message_id
                     b.add_message(message_id)
@@ -666,7 +660,6 @@ def start(update, context):
     else:
         bot_user.last()
     b = ChatBot(update, context)
-    # b.users.write_file()
     context.user_data['bot'] = b
     context.user_data['bot_user'] = bot_user
     log = Log(b)
@@ -686,7 +679,6 @@ def get_contact(update, context):
     if num[0] != '+':
         num = '+' + num
     b.phone_number = num
-    # b.users.update_phone(b.phone_number)
     b.delete_messages()
 
     if b.booking:
