@@ -200,13 +200,15 @@ class ChatBot:
                 button11 = InlineKeyboardButton(text='🔙Назад', callback_data='Правий берег')
             else:
                 button11 = InlineKeyboardButton(text='🔙Назад', callback_data='Лівий берег')
+            button12 = InlineKeyboardButton(text='(c) 👌 Розробка чат-ботів', callback_data='Bot dev')
 
             self.markup = InlineKeyboardMarkup([[button1, button2],
                                                 [button3, button4],
                                                 [button5, button6],
                                                 [button7, button8],
                                                 [button9, button10],
-                                                [button11]])
+                                                [button11],
+                                                [button12]])
         elif self.menu_level == 3:
             if self.mode == 1:  # имя пользователя
                 button1 = InlineKeyboardButton(text="Так, це я",
@@ -591,6 +593,8 @@ def inlineKeyboard(update, context):
         b.spam_text = ''
         b.menu_level = 0
         b.greating()
+    if button_data == 'Bot dev':
+        b.send(text="Розробка чат-ботів за індивідуальним замовленням: " + "https://t.me/Vadym_Matvieiev")
 
 
 def get_answer_from_user(update, context):
