@@ -99,9 +99,8 @@ class User(Base):
     @classmethod
     def get_users_list(cls, ses, filters: dict = None):
         if filters:
-            return ses.query(User).filter_by(**filters).all()
-        return ses.execute(select(User)).scalars().all()
-
+            return ses.query(User).filter_by(**filters).order_by(cls.created).all()
+        return ses.execute(select(User).order_by(cls.created)).scalars().all()
 #  endregion
 
 
