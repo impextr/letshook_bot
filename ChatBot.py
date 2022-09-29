@@ -412,7 +412,24 @@ def inlineKeyboard(update, context):
         b = ChatBot(update, context)
         context.user_data['bot'] = b
     b.delete_messages()
-    bot_user = context.user_data['bot_user']
+    try:
+        bot_user = context.user_data['bot_user']
+    except KeyError:
+        user = update.effective_user
+        bot_user = bu.BotUser(user.id)
+        if bot_user.user is None:
+            d = {"id": user.id,
+                 "is_bot": user.is_bot,
+                 "language_code": user.language_code,
+                 #  "is_premium": user.is_premium,
+                 "first_name": user.first_name,
+                 "last_name": user.last_name,
+                 "full_name": user.full_name,
+                 "username": user.username}
+            bot_user.create(d)
+        else:
+            bot_user.last()
+        context.user_data.update(bot_user=bot_user)
 
     button_data = update.callback_query.data
     log = Log(b)
