@@ -600,7 +600,7 @@ def get_answer_from_user(update, context):
         b = context.user_data['bot']
     except KeyError:
         b = ChatBot(update, context)
-        context.user_data['bot'] = b
+        context.user_data.update(bot=b)
 
     if b.spam:
         b.spam_text = get_text
@@ -660,8 +660,8 @@ def start(update, context):
     else:
         bot_user.last()
     b = ChatBot(update, context)
-    context.user_data['bot'] = b
-    context.user_data['bot_user'] = bot_user
+    context.user_data.update(bot=b)
+    context.user_data.update(bot_user=bot_user)
     log = Log(b)
     log.set(context, action_type=0, action='start')
     b.greating()
@@ -673,6 +673,7 @@ def get_contact(update, context):
     except KeyError:
         b = ChatBot(update, context)
         context.user_data['bot'] = b
+        context.user_data.update(bot=b)
     num = update.message.contact.phone_number
     bot_user = context.user_data['bot_user']
     bot_user.phone_number(num)
@@ -691,7 +692,7 @@ def get_contact(update, context):
 
 def get_location(update, context):
     b = context.user_data['bot']
-    context.user_data['Location'] = update.message.location
+    context.user_data.update(Location=update.message.location)
     b.send(text=f'Дякуємо, локація зафіксована як: {str(update.message.location)}')
 
 
