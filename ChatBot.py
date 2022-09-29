@@ -734,3 +734,5 @@ try:
 except telegram.error.NetworkError as e:
     print(f'Ошибка запуска бота: {e}')
 #  endregion
+
+pass
