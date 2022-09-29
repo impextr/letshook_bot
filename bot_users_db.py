@@ -45,8 +45,7 @@ class BotUser:
             if not database_exists(cls.engine.url):
                 create_database(cls.engine.url)
                 if database_exists(cls.engine.url):
-
-                    print(f"Database {d['name']} created succsessfull")
+                    print(f"Database {cls.engine.url.database} created succsessfull")
                 cls.base.metadata.create_all(cls.engine)
         Session = sessionmaker()
         Session.configure(bind=cls.engine)
