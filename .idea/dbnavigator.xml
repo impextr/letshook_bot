@@ -79,7 +79,7 @@ rem INSERT INTO users.test(id, name) VALUES (405329215, 'Вадим Матвее
   </component>
   <component name="DBNavigator.Project.Settings">
     <connections>
-      <connection id="d41045b4-dc94-4db7-9cd6-52443f57efd3" active="true" signed="true">
+      <connection id="d41045b4-dc94-4db7-9cd6-52443f57efd3" active="false" signed="true">
         <database>
           <name value="Connection" />
           <description value="" />
@@ -95,7 +95,7 @@ rem INSERT INTO users.test(id, name) VALUES (405329215, 'Вадим Матвее
           <database value="mySQL" />
           <type value="USER_PASSWORD" />
           <user value="root" />
-          <deprecated-pwd value="bmR5dGhlLTM2NDgzNQ==" />
+          <deprecated-pwd value="NTEz" />
         </database>
         <properties>
           <auto-commit value="true" />

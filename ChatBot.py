@@ -399,7 +399,8 @@ def create_start():
 options = load_json('options.json')
 tokens = load_json('tokens.json')
 
-test_mode = platform.node() == 'Acer'
+# test_mode = platform.node() == 'Acer'
+test_mode = False
 my_token = tokens['test'] if test_mode else tokens['main']
 #  endregion
 
@@ -659,6 +660,21 @@ def get_answer_from_user(update, context):
             b.mode = 0
             b.send(text=text, markup=True)
             b.notify_about_event()
+        else:
+            num = get_text
+            bot_user = context.user_data['bot_user']
+            bot_user.phone_number(num)
+            if num[0] != '+':
+                num = '+' + num
+            b.phone_number = num
+            b.delete_messages()
+
+            if b.booking:
+                b.booking_approval()
+            elif b.complain:
+                text = 'Дякую що не мовчиш, завдяки тобі ми спробуємо стати сильніше 💪'
+                b.send(text=text)
+                b.notify_about_event()
 
 
 def start(update, context):
@@ -731,25 +747,19 @@ def get_file(update, context):
 
 
 # region Основная часть - запуск
+if __name__ == "__main__":
+    updater = Updater(my_token)
+    dp = updater.dispatcher
 
-
-updater = Updater(my_token)
-dp = updater.dispatcher
-
-dp.add_handler(CommandHandler("start", start))
-dp.add_handler(MessageHandler(filters=Filters.text, callback=get_answer_from_user))
-dp.add_handler(MessageHandler(filters=Filters.contact, callback=get_contact))
-dp.add_handler(MessageHandler(filters=Filters.location, callback=get_location))
-dp.add_handler(MessageHandler(filters=Filters.document, callback=get_file))
-dp.add_handler(InlineQueryHandler(inlineKeyboard, pass_update_queue=True, pass_job_queue=True, pass_user_data=True))
-dp.add_handler(CallbackQueryHandler(inlineKeyboard))
-
-#  session, er = bu.create_session()
-
-try:
-    updater.start_polling()
-except telegram.error.NetworkError as e:
-    print(f'Ошибка запуска бота: {e}')
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(MessageHandler(filters=Filters.text, callback=get_answer_from_user))
+    dp.add_handler(MessageHandler(filters=Filters.contact, callback=get_contact))
+    dp.add_handler(MessageHandler(filters=Filters.location, callback=get_location))
+    dp.add_handler(MessageHandler(filters=Filters.document, callback=get_file))
+    dp.add_handler(InlineQueryHandler(inlineKeyboard, pass_update_queue=True, pass_job_queue=True, pass_user_data=True))
+    dp.add_handler(CallbackQueryHandler(inlineKeyboard))
+    try:
+        updater.start_polling()
+    except telegram.error.NetworkError as e:
+        print(f'Ошибка запуска бота: {e}')
 #  endregion
-
-pass
