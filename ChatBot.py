@@ -661,7 +661,7 @@ def get_answer_from_user(update, context):
             b.send(text=text, markup=True)
             b.notify_about_event()
         else:
-            num = get_text
+            num = get_text[0:20]
             bot_user = context.user_data['bot_user']
             bot_user.phone_number(num)
             if num[0] != '+':
